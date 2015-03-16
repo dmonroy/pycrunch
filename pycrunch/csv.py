@@ -81,7 +81,7 @@ class NoneAsEmptyLineGenerator(CSVLineGenerator):
     '4,"","bar"\n'
     """
 
-    sentinel = "CSV_SENTINEL_NONE"
+    sentinel = "__CSV_SENTINEL_NONE__"
 
     def as_csv(self, row):
         row = [
