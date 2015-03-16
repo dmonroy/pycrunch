@@ -5,8 +5,7 @@ import io
 
 import six
 
-from . import shoji
-from . import csv
+from pycrunch import csvlib, shoji
 
 
 class Importer(object):
@@ -103,6 +102,20 @@ class Importer(object):
             batch.refresh()
             return batch
 
+    def create_batch_from_rows(self, ds, rows):
+        """Send rows of Python values as efficiently as possible.
+        """
+        f = csvlib.rows.as_csv_file(rows)
+        return self.create_batch_from_csv_file(ds, f)
+
+    def create_batch_from_csv_file(self, ds, csv_file):
+        """Create and return a Batch from the given CSV string or open file.
+        """
+        ds.session.post(
+            ds.batches.self,
+            files={"file": ('content.csv', csv_file, 'text/csv')}
+        )
+
 
 importer = Importer()
 """A default Importer."""
@@ -154,26 +167,3 @@ def place(dataset, key, ids, data):
         },
         "data": data
     })
-
-
-def post_rows(ds, rows):
-    """
-    POST the rows to the ds batches. Rows should be an iterable
-    of lists of cells.
-    """
-    gen = csv.NoneAsEmptyLineGenerator()
-    return post_lines(ds, gen.process(rows))
-
-
-def post_lines(ds, lines):
-    """
-    POST the CSV lines to the ds batches. Lines should be an
-    iterable of text CSV lines.
-    """
-    encoded = (line.encode('utf-8') for line in lines)
-    data = b''.join(encoded)
-    content_type = 'application/csv'
-    filename = 'content.csv'
-    file = filename, data, content_type
-    files = dict(file=file)
-    ds.session.post(ds.batches.self, files=files)
