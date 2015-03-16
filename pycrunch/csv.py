@@ -84,14 +84,12 @@ class NoneAsEmptyLineGenerator(CSVLineGenerator):
     sentinel = "CSV_SENTINEL_NONE"
 
     def as_csv(self, row):
-        row = list(six.moves.map(self._inject_sentinel, row))
+        row = [
+            self.sentinel if cell is None else cell
+            for cell in row
+        ]
         line = super(NoneAsEmptyLineGenerator, self).as_csv(row)
         return self.remove_sentinel(line)
-
-    def _inject_sentinel(self, cell):
-        if cell is None:
-            return self.sentinel
-        return cell
 
     def remove_sentinel(self, row):
         pattern = '"' + re.escape(self.sentinel) + '"'
