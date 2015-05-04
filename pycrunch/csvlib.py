@@ -15,7 +15,8 @@ import six
 
 
 def rows_as_csv_file(rows):
-    """Return rows (iterable of lists of cells) as an open CSV file.
+    """Return rows (iterable of lists of cells) as a CSV file open
+    in binary mode.
 
     Any cells in the given
     rows which contain None will be emitted as an empty cell in the CSV
@@ -30,7 +31,7 @@ def rows_as_csv_file(rows):
 
     class EphemeralWriter():
         def write(self, line):
-            line = line.replace(str('"' + sentinel + '"'), str(""))
+            line = line.replace(str('"' + sentinel + '"'), str())
             out.write(line)
     pipe = EphemeralWriter()
 
@@ -53,7 +54,8 @@ def rows_as_csv_file(rows):
     return out
 
 def rows_as_csv_file_clean(rows):
-    """Return rows (iterable of lists of cells) as an open CSV file.
+    """Return rows (iterable of lists of cells) as a CSV file open
+    in binary mode.
 
     Duplicate of rows_as_csv_file except
     None values are emitted
