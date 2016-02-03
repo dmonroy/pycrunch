@@ -5,6 +5,7 @@ for the latest Shoji specification.
 """
 
 import json
+import warnings
 
 import six
 
@@ -108,17 +109,14 @@ class Catalog(elements.Document):
 
             foo_catalog.create({"bar": qux})
 
-        An entity is returned. If 'refresh' is:
+        An entity is returned.
 
-            * True: an additional GET is performed and the Entity it fetches
-              is returned (which is assumed to have the correct "self" member).
-            * False: no additional GET is performed, and a minimal Entity
-              is returned; either way, its "self" member is set to the URL
-              of the newly-created resource.
-            * None (the default): If an Entity was provided, behave like
-              'refresh' was False. If not provided, behave like 'refresh'
-              was True.
+        'refresh' is deprecated.
         """
+        if refresh is not None:
+            msg = "refresh is deprecated; instead call .refresh on the entity"
+            warnings.warn(msg, DeprecationWarning, stacklevel=2)
+
         if refresh is None:
             refresh = (entity is None)
 
@@ -130,10 +128,10 @@ class Catalog(elements.Document):
         r = self.post(data=entity.json)
         new_url = r.headers["Location"]
 
+        entity.self = new_url
+
         if refresh:
-            entity = self.session.get(new_url).payload
-        else:
-            entity.self = new_url
+            entity = entity.refresh()
 
         return entity
 
