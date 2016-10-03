@@ -40,7 +40,9 @@ nosetests.xml
 .pydevproject
 .idea
 
-#Wing
+# Wing
 *.wpr
 *.wpu
 
+# Pytest
+.cache/
