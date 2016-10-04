@@ -66,7 +66,7 @@ class TestExclusionFilters(TestCase):
 
 class TestFilterExpressionParsing(TestCase):
 
-    def test_parse_single_test_comparison(self):
+    def test_parse_notequal_string(self):
         expr = "name != 'John Doe'"
         expr_obj = parse_expr(expr)
         assert expr_obj == {
@@ -92,6 +92,36 @@ class TestFilterExpressionParsing(TestCase):
                 },
                 {
                     'variable': 'name'
+                }
+            ]
+        }
+
+    def test_parse_notequal_int(self):
+        expr = "age != 1"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': '!=',
+            'args': [
+                {
+                    'variable': 'age'
+                },
+                {
+                    'value': 1
+                }
+            ]
+        }
+
+        # Reversed.
+        expr = "1 != age"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': '!=',
+            'args': [
+                {
+                    'value': 1
+                },
+                {
+                    'variable': 'age'
                 }
             ]
         }
