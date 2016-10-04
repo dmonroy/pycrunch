@@ -475,7 +475,7 @@ class TestFilterExpressionParsing(TestCase):
         #        [{'disposition': [0]}, {'exit_status': [0]}])})
         expr = "disposition == 0 and exit_status == 0"
         expr_obj = parse_expr(expr)
-        print expr_obj
+        print(expr_obj)
         assert expr_obj == {
             'function': 'and',
             'args': [

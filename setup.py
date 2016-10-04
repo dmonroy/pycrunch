@@ -46,9 +46,10 @@ setup_params = dict(
         'six',
     ],
     tests_require=[
+        'backports.unittest_mock',
+        'mock',
         'pandas',
         'pytest',
-        'mock'
     ],
     setup_requires=[
     ] + pytest_runner,

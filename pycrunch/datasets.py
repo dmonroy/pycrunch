@@ -1,6 +1,8 @@
 import ast
 import json
 
+import six
+
 
 NOT_IN = object()
 
@@ -140,7 +142,7 @@ def exclusion(ds, expr=None):
     as part of the PATCH request, which effectively removes the exclusion
     filter (if any).
     """
-    if isinstance(expr, (str, unicode)):
+    if isinstance(expr, six.string_types):
         expr_obj = parse_expr(expr)
         expr_obj = post_process_expr(expr_obj, ds.variables.by('alias'))
     elif expr is None:
