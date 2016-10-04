@@ -4,6 +4,8 @@
 *.orig
 cr/lib/tests/datadir/
 venv/
+env/
+.eggs
 
 # C extensions
 *.so
