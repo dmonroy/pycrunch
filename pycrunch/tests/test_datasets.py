@@ -66,11 +66,41 @@ class TestExclusionFilters(TestCase):
 
 class TestFilterExpressionParsing(TestCase):
 
-    def test_parse_notequal_string(self):
-        expr = "name != 'John Doe'"
+    def test_parse_equal_int(self):
+        expr = "age == 1"
         expr_obj = parse_expr(expr)
         assert expr_obj == {
-            'function': '!=',
+            'function': '==',
+            'args': [
+                {
+                    'variable': 'age'
+                },
+                {
+                    'value': 1
+                }
+            ]
+        }
+
+        # Reversed.
+        expr = "1 == age"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': '==',
+            'args': [
+                {
+                    'value': 1
+                },
+                {
+                    'variable': 'age'
+                }
+            ]
+        }
+
+    def test_parse_equal_string(self):
+        expr = "name == 'John Doe'"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': '==',
             'args': [
                 {
                     'variable': 'name'
@@ -82,10 +112,10 @@ class TestFilterExpressionParsing(TestCase):
         }
 
         # Reversed.
-        expr = "'John Doe' != name"
+        expr = "'John Doe' == name"
         expr_obj = parse_expr(expr)
         assert expr_obj == {
-            'function': '!=',
+            'function': '==',
             'args': [
                 {
                     'value': 'John Doe'
@@ -126,11 +156,131 @@ class TestFilterExpressionParsing(TestCase):
             ]
         }
 
-    def test_parse_single_numeric_comparison(self):
+    def test_parse_notequal_string(self):
+        expr = "name != 'John Doe'"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': '!=',
+            'args': [
+                {
+                    'variable': 'name'
+                },
+                {
+                    'value': 'John Doe'
+                }
+            ]
+        }
+
+        # Reversed.
+        expr = "'John Doe' != name"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': '!=',
+            'args': [
+                {
+                    'value': 'John Doe'
+                },
+                {
+                    'variable': 'name'
+                }
+            ]
+        }
+
+    def test_parse_less_than(self):
+        expr = "caseid < 1234"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': '<',
+            'args': [
+                {
+                    'variable': 'caseid'
+                },
+                {
+                    'value': 1234
+                }
+            ]
+        }
+
+        # Reversed.
+        expr = "1234 < caseid"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': '<',
+            'args': [
+                {
+                    'value': 1234
+                },
+                {
+                    'variable': 'caseid'
+                }
+            ]
+        }
+
+    def test_parse_less_than_equal(self):
         expr = "caseid <= 1234"
         expr_obj = parse_expr(expr)
         assert expr_obj == {
             'function': '<=',
+            'args': [
+                {
+                    'variable': 'caseid'
+                },
+                {
+                    'value': 1234
+                }
+            ]
+        }
+
+        # Reversed.
+        expr = "1234 <= caseid"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': '<=',
+            'args': [
+                {
+                    'value': 1234
+                },
+                {
+                    'variable': 'caseid'
+                }
+            ]
+        }
+
+    def test_parse_greater_than(self):
+        expr = "caseid > 1234"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': '>',
+            'args': [
+                {
+                    'variable': 'caseid'
+                },
+                {
+                    'value': 1234
+                }
+            ]
+        }
+
+        # Reversed.
+        expr = "1234 > caseid"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': '>',
+            'args': [
+                {
+                    'value': 1234
+                },
+                {
+                    'variable': 'caseid'
+                }
+            ]
+        }
+
+    def test_parse_greater_than_equal(self):
+        expr = "caseid >= 1234"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': '>=',
             'args': [
                 {
                     'variable': 'caseid'
@@ -161,6 +311,72 @@ class TestFilterExpressionParsing(TestCase):
         expr_obj = parse_expr(expr)
         assert expr_obj == {
             'function': '==',
+            'args': [
+                {
+                    'variable': 'starttdate'
+                },
+                {
+                    'variable': 'arrivedate'
+                }
+            ]
+        }
+        expr = "starttdate != arrivedate"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': '!=',
+            'args': [
+                {
+                    'variable': 'starttdate'
+                },
+                {
+                    'variable': 'arrivedate'
+                }
+            ]
+        }
+        expr = "starttdate < arrivedate"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': '<',
+            'args': [
+                {
+                    'variable': 'starttdate'
+                },
+                {
+                    'variable': 'arrivedate'
+                }
+            ]
+        }
+        expr = "starttdate <= arrivedate"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': '<=',
+            'args': [
+                {
+                    'variable': 'starttdate'
+                },
+                {
+                    'variable': 'arrivedate'
+                }
+            ]
+        }
+        expr = "starttdate > arrivedate"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': '>',
+            'args': [
+                {
+                    'variable': 'starttdate'
+                },
+                {
+                    'variable': 'arrivedate'
+                }
+            ]
+        }
+
+        expr = "starttdate >= arrivedate"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': '>=',
             'args': [
                 {
                     'variable': 'starttdate'
