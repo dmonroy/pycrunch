@@ -468,3 +468,89 @@ class TestFilterExpressionParsing(TestCase):
                 }
             ]
         }
+
+    def test_parse_omnibus_rule_1(self):
+        # 'text': 'diposition code 0 (screenouts)',
+        # 'index_mapper': intersection(
+        #        [{'disposition': [0]}, {'exit_status': [0]}])})
+        expr = "disposition == 0 and exit_status == 0"
+        expr_obj = parse_expr(expr)
+        print expr_obj
+        assert expr_obj == {
+            'function': 'and',
+            'args': [
+                {
+                    'function': '==',
+                    'args': [
+                        {
+                            'variable': 'disposition'
+                        },
+                        {
+                            'value': 0
+                        }
+                    ]
+                },
+                {
+                    'function': '==',
+                    'args': [
+                        {
+                            'variable': 'exit_status'
+                        },
+                        {
+                            'value': 0
+                        }
+                    ]
+                }
+            ]
+        }
+
+# 'diposition code 0 (incompletes)':
+# intersection(
+#     [{'disposition': not_any([1])},
+#      union([{'exit_status': has_count(0)},
+#             {'exit_status': is_ge(1)}])
+#      ]
+# )
+
+
+# 'text': 'diposition code 0 (quotafull)',
+# 'index_mapper': intersection(
+#     [{'disposition': [0]}, {'exit_status': [1]}])}
+
+
+# 'text': 'sta: nicht aus Deutschland',
+# 'index_mapper': {'sta': has_any([17])}},
+
+# 'text': '(age >= 18) & profile_julesage is NaN',
+#             'index_mapper': intersection(
+#                 [
+#                     {'age': is_ge(18)},
+#                     {'profile_julesage': has_count(0)}])},
+
+#'text': '(age >= 18) & profile_bpcagesex is NaN',
+# 'index_mapper': intersection(
+#     [{'age': is_ge(18)}, {'profile_bpcagesex': has_count(0)}])}],
+
+# 'text': 'LONDON 18 NAN (profile_bpcagesex)',
+# 'index_mapper': intersection(
+#     [{'age': is_ge(18)}, {'profile_bpcagesex': has_count(0)}])},
+
+# 'text': 'profile_GOR not code 11',
+# 'index_mapper': {'profile_GOR': not_any([11])}}],
+
+# 'text': '(age >= 18) & profile_julesage is NaN',
+# 'index_mapper': intersection(
+#     [{'age': is_ge(18)}, {'profile_julesage': has_count(0)}])},
+
+# 'text': 'CompanyTurnover is NA',
+# 'index_mapper': {'CompanyTurnover': has_any([99])}},
+
+# 'text': 'Not Private Sector',
+# 'index_mapper': {'sector': has_any([2, 3, 98, 99])}},
+
+# 'text': 'Not the right decision maker',
+# 'index_mapper': {'DecisionMaking2': not_any(frange('1-10'))}},
+
+# 'text': 'Duplicate identity',
+# 'columns': 'identity',
+# 'duplicated': True}])
