@@ -140,8 +140,13 @@ def exclusion(ds, expr=None):
     as part of the PATCH request, which effectively removes the exclusion
     filter (if any).
     """
-    expr_obj = parse_expr(expr)
-    expr_obj = post_process_expr(expr_obj, ds.variables.by('alias'))
+    if isinstance(expr, (str, unicode)):
+        expr_obj = parse_expr(expr)
+        expr_obj = post_process_expr(expr_obj, ds.variables.by('alias'))
+    elif expr is None:
+        expr_obj = {}
+    else:
+        expr_obj = expr
     return ds.session.patch(
         ds.fragments.exclusion,
         data=json.dumps(dict(expression=expr_obj))
