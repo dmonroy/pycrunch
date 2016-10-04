@@ -475,7 +475,6 @@ class TestFilterExpressionParsing(TestCase):
         #        [{'disposition': [0]}, {'exit_status': [0]}])})
         expr = "disposition == 0 and exit_status == 0"
         expr_obj = parse_expr(expr)
-        print(expr_obj)
         assert expr_obj == {
             'function': 'and',
             'args': [
@@ -504,6 +503,75 @@ class TestFilterExpressionParsing(TestCase):
             ]
         }
 
+    def test_parse_omnibus_rule_2_complex(self):
+        # Lets combine this with the previous one:
+        # 'text': 'diposition code 0 (quotafull)',
+        # 'index_mapper': intersection(
+        #     [{'disposition': [0]}, {'exit_status': [1]}])
+        expr = "(disposition == 0 and exit_status == 1) or " \
+               "(disposition == 0 and exit_status == 0)"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'or',
+            'args': [{
+                    'function': 'and',
+                    'args': [
+                        {
+                            'function': '==',
+                            'args': [
+                                {
+                                    'variable': 'disposition'
+                                },
+                                {
+                                    'value': 0
+                                }
+                            ]
+                        },
+                        {
+                            'function': '==',
+                            'args': [
+                                {
+                                    'variable': 'exit_status'
+                                },
+                                {
+                                    'value': 1
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    'function': 'and',
+                    'args': [
+                        {
+                            'function': '==',
+                            'args': [
+                                {
+                                    'variable': 'disposition'
+                                },
+                                {
+                                    'value': 0
+                                }
+                            ]
+                        },
+                        {
+                            'function': '==',
+                            'args': [
+                                {
+                                    'variable': 'exit_status'
+                                },
+                                {
+                                    'value': 0
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]}
+
+
+
+
 # 'diposition code 0 (incompletes)':
 # intersection(
 #     [{'disposition': not_any([1])},
@@ -513,9 +581,6 @@ class TestFilterExpressionParsing(TestCase):
 # )
 
 
-# 'text': 'diposition code 0 (quotafull)',
-# 'index_mapper': intersection(
-#     [{'disposition': [0]}, {'exit_status': [1]}])}
 
 
 # 'text': 'sta: nicht aus Deutschland',
@@ -554,3 +619,15 @@ class TestFilterExpressionParsing(TestCase):
 # 'text': 'Duplicate identity',
 # 'columns': 'identity',
 # 'duplicated': True}])
+
+
+# {  Drop anything missing (not asked/skipped/don't know/missing)
+#     'text': 'DE PET OWNER NaN',
+#     'columns': [
+#                 'age_omnibus_18', 'gender',
+#                 'nielsenregion', ''],
+#     'dropna': True}
+
+
+# { 'text': 'pets_omnibus not codes 1-4',
+#     'index_mapper': {'pets_omnibus': not_any([1, 2, 3, 4])}}]
