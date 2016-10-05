@@ -648,6 +648,49 @@ class TestExpressionParsing(TestCase):
             ]
         }
 
+    def test_parse_duplicates_method(self):
+        expr = "identity.duplicates()"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'duplicates',
+            'args': [
+                {
+                    'variable': 'identity'
+                }
+            ]
+        }
+
+        # Negated.
+        expr = "not identity.duplicates()"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': 'duplicates',
+                    'args': [
+                        {
+                            'variable': 'identity'
+                        }
+                    ]
+                }
+            ]
+        }
+
+        # Parameters not allowed.
+        with pytest.raises(ValueError):
+            parse_expr("identity.duplicates([1,2,3])")
+
+        with pytest.raises(ValueError):
+            parse_expr("identity.duplicates(1)")
+
+        with pytest.raises(ValueError):
+            parse_expr("identity.duplicates('hello')")
+
+        with pytest.raises(ValueError):
+            parse_expr("identity.duplicates(False)")
+
+
 # 'diposition code 0 (incompletes)':
 # intersection(
 #     [{'disposition': not_any([1])},

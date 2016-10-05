@@ -106,10 +106,11 @@ def parse_expr(expr):
                     raise ValueError
                 _id = _parse(_id_node, parent=node)
 
-                # The 'method'
+                # The 'method'.
                 crunch_method_map = {
                     'has_any': 'any',
-                    'has_all': 'all'
+                    'has_all': 'all',
+                    'duplicates': 'duplicates'
                 }
                 method = fields[1][1]
                 if method not in crunch_method_map.keys():
@@ -144,11 +145,19 @@ def parse_expr(expr):
                             raise ValueError
                         op = _parse(_val[0], parent=node)
                     elif _name == 'comparators' or _name == 'args':  # right
-                        if len(_val) != 1:
+                        if len(_val) > 1:
                             raise ValueError
+                        elif len(_val) == 0:
+                            continue
+
+                        if op == 'duplicates':
+                            # No parameters allowed for the 'duplicates' method.
+                            raise ValueError
+
                         right = _parse(_val[0], parent=node)
 
-                        # In method calls, we only allow list-of-int parameters.
+                        # For method calls, we only allow list-of-int
+                        # parameters.
                         if _name == 'args':
                             if 'value' not in right \
                                     or not isinstance(right['value'], list):
@@ -185,7 +194,7 @@ def parse_expr(expr):
 
                 if args and 'args' in obj:
                     if op is NOT_IN:
-                        # Special treatment for the `not in` operator.
+                        # Special treatment for the args in a `not in` expr.
                         obj['args'][0]['args'] = args
                     else:
                         obj['args'] = args
