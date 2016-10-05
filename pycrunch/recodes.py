@@ -5,7 +5,7 @@ TODO:
 """
 
 
-skeleton = {
+SKELETON = {
     "element": "shoji:entity",
     "body": {
         "name": "name",
@@ -35,6 +35,10 @@ def var_name_to_id(ds, varname):
 
 
 def validate_category_map(map):
+    """
+    :param map: categories keyed by new category id mapped to existing ones
+    :return: a list of dictionary objects that the Crunch Api expects
+    """
     for value in map.values():
         # TODO: combined_ids must be an existing category
         keys = set(value.keys())
@@ -72,11 +76,11 @@ def combine_categories(ds, from_name, category_map, name, alias, description='')
     if not variable_url:
         raise TypeError("Variable %s does not exist in Dataset %s" % (from_name, ds['body']['name']))
     categories = validate_category_map(category_map)
-    payload = skeleton.copy()
+    payload = SKELETON.copy()
     payload['body']['name'] = name
-    payload['body']['aliad'] = alias
+    payload['body']['alias'] = alias
     payload['body']['description'] = description
-    args = [
+    payload['body']['expr']['args'] = [
         {
             "variable": variable_url
         },
@@ -84,8 +88,6 @@ def combine_categories(ds, from_name, category_map, name, alias, description='')
             "value": categories
         }
     ]
-    payload['body']['expr']['args'] = args
-    print(payload)
     return ds.variables.create(payload)
 
 
@@ -129,4 +131,3 @@ if __name__ == '__main__':
     )
     var.refresh()
     print(var)
-    
