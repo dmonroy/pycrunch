@@ -124,7 +124,7 @@ def parse_expr(expr):
                             isinstance(_val, ast.BoolOp)
                             or isinstance(_val, ast.UnaryOp)
                             or isinstance(_val, ast.Compare)
-                            or isinstance(_val, ast.Call) ):
+                            or isinstance(_val, ast.Call)):
                         # Descend.
                         obj.update(_parse(_val, parent=node))
                     elif isinstance(_val, ast.And):
@@ -200,10 +200,10 @@ def parse_expr(expr):
 
 def process_expr(obj, ds):
     """
-    Given a Crunch expression object and a Dataset entity object
+    Given a Crunch expression object (or objects) and a Dataset entity object
     (i.e. a Shoji entity), this function returns a new expression object
-    with all variable aliases transformed into variable URLs, just as
-    the crunch API needs them to be.
+    (or a list of new expression objects) with all variable aliases
+    transformed into variable URLs, just as the crunch API needs them to be.
     """
 
     def _process(obj, variables):
@@ -217,5 +217,11 @@ def process_expr(obj, ds):
                 obj[key] = variables[val].entity.self
         return obj
 
-    _obj = copy.deepcopy(obj)
-    return _process(_obj, ds.variables.by('alias'))
+    variables = ds.variables.by('alias')
+
+    if isinstance(obj, list):
+        return [
+            _process(copy.deepcopy(element), variables) for element in obj
+        ]
+    else:
+        return _process(copy.deepcopy(obj), variables)
