@@ -616,6 +616,39 @@ class TestFilterExpressionParsing(TestCase):
                 }
             ]}
 
+    def test_parse_omnibus_has_any(self):
+        # 'text': 'CompanyTurnover is NA',
+        # 'index_mapper': {'CompanyTurnover': has_any([99])}},
+
+        # 'text': 'Not Private Sector',
+        # 'index_mapper': {'sector': has_any([2, 3, 98, 99])}},
+        expr = "CompanyTurnover.has_any([99])"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'any',
+            'args': [
+                {
+                    'variable': 'CompanyTurnover'
+                },
+                {
+                    'value': [99]
+                }
+            ]
+        }
+
+        expr = "sector.has_any([2, 3, 98, 99])"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'any',
+            'args': [
+                {
+                    'variable': 'sector'
+                },
+                {
+                    'value': [2, 3, 98, 99]
+                }
+            ]
+        }
 
 # 'diposition code 0 (incompletes)':
 # intersection(
@@ -652,11 +685,6 @@ class TestFilterExpressionParsing(TestCase):
 # 'index_mapper': intersection(
 #     [{'age': is_ge(18)}, {'profile_julesage': has_count(0)}])},
 
-# 'text': 'CompanyTurnover is NA',
-# 'index_mapper': {'CompanyTurnover': has_any([99])}},
-
-# 'text': 'Not Private Sector',
-# 'index_mapper': {'sector': has_any([2, 3, 98, 99])}},
 
 # 'text': 'Not the right decision maker',
 # 'index_mapper': {'DecisionMaking2': not_any(frange('1-10'))}},
