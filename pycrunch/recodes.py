@@ -1,8 +1,3 @@
-"""
-TODO:
-    - Validate category_map ids
-    -
-"""
 
 SKELETON = {
     "element": "shoji:entity",
@@ -11,7 +6,7 @@ SKELETON = {
         "description": "description",
         "alias": "alias",
         "expr": {
-            "function": "combine_categories",
+            "function": "function",
             "args": []
         }
     }
@@ -19,6 +14,7 @@ SKELETON = {
 
 
 REQUIRED_VALUES = {"name", "id", "missing", "combined_ids"}
+REQUIRES_RESPONSES = {"combined_ids", "name"}
 
 
 def var_name_to_url(ds, alias):
@@ -30,7 +26,27 @@ def var_name_to_url(ds, alias):
     try:
         return ds.variables.by('alias')[alias].entity.self
     except KeyError:
-        raise KeyError("Variable %s does not exist in Dataset %s" % (alias, ds['body']['name']))
+        raise KeyError(
+            "Variable %s does not exist in Dataset %s" % (alias, ds['body']['name']))
+
+
+def aliases_to_urls(ds, variable, response_map):
+    """
+    Maps subvariable aliases to urls
+    :param ds: /Users/mbc/Yougov/Crunch/pycrunch/pycrunch/recodes.py
+    :param variable: variable alias we want to inspect
+    :param response_map: mapping of new subvariables
+    :return:
+    """
+    suvars = ds.variables.by('name')[variable].entity.subvariables.by('name')
+    mapped_urls = {}
+    for key, values in response_map.items():
+        try:
+            mapped_urls[key] = [suvars[x].entity.self for x in values]
+        except KeyError:
+            raise KeyError(
+                "Unexistant variables %s in Dataset %s" % (values, ds['body']['name']))
+    return mapped_urls
 
 
 def validate_category_map(map):
@@ -42,12 +58,26 @@ def validate_category_map(map):
         keys = set(value.keys())
         assert keys & REQUIRED_VALUES, (
             "category_map has one or more missing keys of " % REQUIRED_VALUES)
-    rebuilt = []
+    rebuilt = list()
     for key, value in map.items():
-        category = {}
+        category = dict()
         category.update(value)
         category['id'] = key
         rebuilt.append(category)
+    return rebuilt
+
+
+def validate_response_map(map):
+    """
+    :param map: responses keyed by new alias mapped to existing aliases
+    :return: a list of dictionaries describing the new responses to create for the variable
+    """
+    rebuilt = list()
+    for key, value in map.items():
+        response = dict()
+        response['name'] = key
+        response['combined_ids'] = value
+        rebuilt.append(response)
     return rebuilt
 
 
@@ -76,6 +106,7 @@ def combine_categories(ds, from_alias, category_map, name, alias, description=''
     payload['body']['name'] = name
     payload['body']['alias'] = alias
     payload['body']['description'] = description
+    payload['body']['expr']['function'] = 'combine_categories'
     payload['body']['expr']['args'] = [
         {
             "variable": variable_url
@@ -87,50 +118,31 @@ def combine_categories(ds, from_alias, category_map, name, alias, description=''
     return ds.variables.create(payload)
 
 
-def combine_responses(original_variable_alias, name, alias, description=''):
+def combine_responses(ds, from_alias, response_map, name, alias, description=''):
     """
-    map={new_subvar_name1:[old_subvar_alias1, old_subvar_alias2]}, {new_subvar_name2: [old_subvar_alias3, old_subvar_alias4]
-    :return:
-    """
-    pass
-
-# ===    T E S T S
-from pycrunch import connect, connect_with_token
-
-
-def crunch_session():
-    site = connect('gryphon-streaming@yougov.com', '71N8bDIoLwkqvvy7', 'https://alpha.crunch.io/api/')
-    return connect_with_token(site.session.cookies['token'], 'https://alpha.crunch.io/api/')
-
-
-if __name__ == '__main__':
-    session = crunch_session()
-    # get Mathias test dataset
-    ds = session.projects.by('id')['614a7b2ebe9a4292bba54edce83563ae'].entity.datasets.by('id')['71f9ff66a4ad4e9385bbc4172f681d5f'].entity
-    category_map = {
-        1: {
-            "name": "China",
-            "missing": False,
-            "combined_ids": [2, 3]
-        },
-        2: {
-            "name": "Other",
-            "missing": False,
-            "combined_ids": [1]
-        },
-        -1: {
-            "name": "Missing",
-            "missing": True,
-            "combined_ids": [-1]
-        },
+    Creates a new variable in the given dataset that combines existing responses
+    into new categorized ones
+    response_map = {
+        new_subvar_name1:[old_subvar_alias1, old_subvar_alias2],
+        new_subvar_name2: [old_subvar_alias3, old_subvar_alias4]
     }
-    var = combine_categories(
-        ds=ds,
-        from_alias='countryofresidence',
-        category_map=category_map,
-        name='Recode',
-        alias='recode',
-        description='Recoding variable'
-    )
-    var.refresh()
-    print(var)
+    :return: newly created variable
+    """
+    variable_url = var_name_to_url(ds, from_alias)
+    trans_responses = aliases_to_urls(ds, from_alias, response_map)
+    responses = validate_response_map(trans_responses)
+    payload = SKELETON.copy()
+    payload['body']['name'] = name
+    payload['body']['alias'] = alias
+    payload['body']['description'] = description
+    payload['body']['expr']['function'] = 'combine_responses'
+    payload['body']['expr']['args'] = [
+        {
+            "variable": variable_url
+        },
+        {
+            "value": responses
+        }
+    ]
+    return ds.variables.create(payload)
+
