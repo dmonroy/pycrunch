@@ -21,16 +21,16 @@ SKELETON = {
 REQUIRED_VALUES = {"name", "id", "missing", "combined_ids"}
 
 
-def var_name_to_url(ds, varname):
+def var_name_to_url(ds, alias):
     """
     :param ds: The dataset we are gonna inspect
     :param varname: the variable name we want to check
     :return: the id of the given varname or None
     """
     try:
-        return ds.variables.by('name')[varname].entity.self
+        return ds.variables.by('alias')[alias].entity.self
     except KeyError:
-        raise KeyError("Variable %s does not exist in Dataset %s" % (varname, ds['body']['name']))
+        raise KeyError("Variable %s does not exist in Dataset %s" % (alias, ds['body']['name']))
 
 
 def validate_category_map(map):
@@ -51,7 +51,7 @@ def validate_category_map(map):
     return rebuilt
 
 
-def combine_categories(ds, from_name, category_map, name, alias, description=''):
+def combine_categories(ds, from_alias, category_map, name, alias, description=''):
     """
     Create a new variable in the given dataset that is a recode
     of an existing variable
@@ -64,13 +64,13 @@ def combine_categories(ds, from_name, category_map, name, alias, description='')
         },
     }
     :param ds: pycrunch session dataset
-    :param from_name: name of the variable to recode
+    :param from_alias: alias of the variable to recode
     :param name: name for the new variable
     :param alias: alias for the new variable
     :param description: description for the new variable
     :return: the new created variable
     """
-    variable_url = var_name_to_url(ds, from_name)
+    variable_url = var_name_to_url(ds, from_alias)
     categories = validate_category_map(category_map)
     payload = SKELETON.copy()
     payload['body']['name'] = name
@@ -86,6 +86,13 @@ def combine_categories(ds, from_name, category_map, name, alias, description='')
     ]
     return ds.variables.create(payload)
 
+
+def combine_responses(original_variable_alias, name, alias, description=''):
+    """
+    map={new_subvar_name1:[old_subvar_alias1, old_subvar_alias2]}, {new_subvar_name2: [old_subvar_alias3, old_subvar_alias4]
+    :return:
+    """
+    pass
 
 # ===    T E S T S
 from pycrunch import connect, connect_with_token
@@ -119,7 +126,7 @@ if __name__ == '__main__':
     }
     var = combine_categories(
         ds=ds,
-        from_name='countryofresidence',
+        from_alias='countryofresidence',
         category_map=category_map,
         name='Recode',
         alias='recode',
