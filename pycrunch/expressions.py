@@ -33,7 +33,7 @@ be transformed by this module's parser into:
             ]
         }
 
-Its important to note that the expressions objects produced by this module's
+Its important to note that the expression objects produced by this module's
 parser are not ready for being sent to crunch, as they refer to variables
 by `alias` rather than by `variable_id` (which is a URL). So, this module
 also provides a `process_expr` function that creates an expression object
