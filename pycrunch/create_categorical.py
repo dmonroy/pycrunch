@@ -6,6 +6,13 @@ def create_categorical(ds, alias, name, categories, rules, description=''):
     """
     some docstring
     """
+
+    print(len(categories), len(rules))
+    print(rules)
+    if not ((len(categories) - 1) <= len(rules) <= len(categories)):
+        raise ValueError(
+            'Amount of rules should match categories (or categories -1')
+
     if not hasattr(ds, 'variables'):
         ds.refresh()
 
