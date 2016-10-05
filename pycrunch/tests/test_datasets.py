@@ -650,6 +650,65 @@ class TestFilterExpressionParsing(TestCase):
             ]
         }
 
+    def test_parse_negated_expr(self):
+        expr = "not (age == 1)"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': '==',
+                    'args': [
+                        {
+                            'variable': 'age'
+                        },
+                        {
+                            'value': 1
+                        }
+                    ]
+                }
+            ]
+        }
+
+    def test_parse_negated_method_call(self):
+        expr = 'not Q2.has_any([1, 2, 3])'
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': 'any',
+                    'args': [
+                        {
+                            'variable': 'Q2'
+                        },
+                        {
+                            'value': [1, 2, 3]
+                        }
+                    ]
+                }
+            ]
+        }
+
+        expr = 'not Q2.has_all([1, 2, 3])'
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': 'all',
+                    'args': [
+                        {
+                            'variable': 'Q2'
+                        },
+                        {
+                            'value': [1, 2, 3]
+                        }
+                    ]
+                }
+            ]
+        }
+
 # 'diposition code 0 (incompletes)':
 # intersection(
 #     [{'disposition': not_any([1])},

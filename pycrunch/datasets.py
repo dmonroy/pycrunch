@@ -79,15 +79,19 @@ def parse_expr(expr):
             # "Non-terminal" nodes.
             else:
                 for _name, _val in fields:
-                    if isinstance(_val, ast.BoolOp) \
-                            or isinstance(_val, ast.Compare) \
-                            or isinstance(_val, ast.Call):
+                    if not isinstance(node, ast.UnaryOp) and (
+                            isinstance(_val, ast.BoolOp)
+                            or isinstance(_val, ast.UnaryOp)
+                            or isinstance(_val, ast.Compare)
+                            or isinstance(_val, ast.Call) ):
                         # Descend.
                         obj.update(_parse(_val, parent=node))
                     elif isinstance(_val, ast.And):
                         op = 'and'
                     elif isinstance(_val, ast.Or):
                         op = 'or'
+                    elif isinstance(_val, ast.Not):
+                        op = 'not'
                     elif _name == 'left':
                         left = _parse(_val, parent=node)
                         args.append(left)
@@ -110,8 +114,11 @@ def parse_expr(expr):
 
                         args.append(right)
                     elif _name in ('keywords', 'starargs', 'kwargs') and _val:
-                        # We don't support these.
+                        # We don't support these in method calls.
                         raise ValueError
+                    elif _name == 'operand' and isinstance(node, ast.UnaryOp):
+                        right = _parse(_val, parent=node)
+                        args.append(right)
                     elif isinstance(_val, list):
                         for arg in _val:
                             args.append(_parse(arg, parent=node))
