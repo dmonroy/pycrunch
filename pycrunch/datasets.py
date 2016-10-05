@@ -3,11 +3,15 @@ import json
 
 import six
 
-
 NOT_IN = object()
 
 
-def parse_expr(expr):
+def var_url(ds, name):
+    varmap = ds.variables.by('alias')
+    return varmap[name].entity_url
+
+
+def parse_expr(expr, ds=None, urls=False):
 
     def _parse(node, parent=None):
         obj = {}
@@ -22,7 +26,7 @@ def parse_expr(expr):
             if isinstance(node, ast.Name):
                 _id = fields[0][1]
                 return {
-                    'variable': _id
+                    'variable': _id if not urls else var_url(ds, _id)
                 }
             elif isinstance(node, ast.Num) or isinstance(node, ast.Str):
                 _val = fields[0][1]
