@@ -1,13 +1,15 @@
 import ast
 import json
 
+import six
+
 
 NOT_IN = object()
 
 
 def parse_expr(expr):
 
-    def _parse(node):
+    def _parse(node, parent=None):
         obj = {}
         args = []
         op = None
@@ -56,31 +58,63 @@ def parse_expr(expr):
                         for el in _list
                     ]
                 }
+            elif isinstance(node, ast.Attribute) and isinstance(parent, ast.Call):
+                # The variable.
+                _id_node = fields[0][1]
+                if not isinstance(_id_node, ast.Name):
+                    raise ValueError
+                _id = _parse(_id_node, parent=node)
+
+                # The 'method'
+                crunch_method_map = {
+                    'has_any': 'any',
+                    'has_all': 'all'
+                }
+                method = fields[1][1]
+                if method not in crunch_method_map.keys():
+                    raise ValueError
+
+                return _id, crunch_method_map[method]
 
             # "Non-terminal" nodes.
             else:
                 for _name, _val in fields:
-                    if isinstance(_val, ast.BoolOp) or isinstance(_val, ast.Compare):
+                    if isinstance(_val, ast.BoolOp) \
+                            or isinstance(_val, ast.Compare) \
+                            or isinstance(_val, ast.Call):
                         # Descend.
-                        obj.update(_parse(_val))
+                        obj.update(_parse(_val, parent=node))
                     elif isinstance(_val, ast.And):
                         op = 'and'
                     elif isinstance(_val, ast.Or):
                         op = 'or'
                     elif _name == 'left':
-                        left = _parse(_val)
+                        left = _parse(_val, parent=node)
+                        args.append(left)
+                    elif _name == 'func' and isinstance(_val, ast.Attribute):
+                        left, op = _parse(_val, parent=node)
                         args.append(left)
                     elif _name == 'ops':
                         if len(_val) != 1:
                             raise ValueError
-                        op = _parse(_val[0])
-                    elif _name == 'comparators':  # i.e. "the right side"
+                        op = _parse(_val[0], parent=node)
+                    elif _name == 'comparators' or _name == 'args':  # i.e. "the right side"
                         if len(_val) != 1:
                             raise ValueError
-                        right = _parse(_val[0])
+                        right = _parse(_val[0], parent=node)
+
+                        # In method calls, we only allow list-of-int parameters.
+                        if _name == 'args':
+                            if 'value' not in right or not isinstance(right['value'], list):
+                                raise ValueError
+
                         args.append(right)
+                    elif _name in ('keywords', 'starargs', 'kwargs') and _val:
+                        # We don't support these.
+                        raise ValueError
                     elif isinstance(_val, list):
-                        args = [_parse(arg) for arg in _val]
+                        for arg in _val:
+                            args.append(_parse(arg, parent=node))
 
                 if op:
                     if op is NOT_IN:
@@ -100,12 +134,12 @@ def parse_expr(expr):
                             'args': []
                         }
 
-            if args and 'args' in obj:
-                if op is NOT_IN:
-                    # Special treatment for the `not in` operator.
-                    obj['args'][0]['args'] = args
-                else:
-                    obj['args'] = args
+                if args and 'args' in obj:
+                    if op is NOT_IN:
+                        # Special treatment for the `not in` operator.
+                        obj['args'][0]['args'] = args
+                    else:
+                        obj['args'] = args
 
         return obj
 
@@ -140,7 +174,7 @@ def exclusion(ds, expr=None):
     as part of the PATCH request, which effectively removes the exclusion
     filter (if any).
     """
-    if isinstance(expr, (str, unicode)):
+    if isinstance(expr, six.string_types):
         expr_obj = parse_expr(expr)
         expr_obj = post_process_expr(expr_obj, ds.variables.by('alias'))
     elif expr is None:

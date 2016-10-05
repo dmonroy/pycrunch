@@ -1,5 +1,6 @@
 import json
 
+import pytest
 from unittest import TestCase
 from unittest import mock
 
@@ -475,7 +476,6 @@ class TestFilterExpressionParsing(TestCase):
         #        [{'disposition': [0]}, {'exit_status': [0]}])})
         expr = "disposition == 0 and exit_status == 0"
         expr_obj = parse_expr(expr)
-        print expr_obj
         assert expr_obj == {
             'function': 'and',
             'args': [
@@ -504,6 +504,152 @@ class TestFilterExpressionParsing(TestCase):
             ]
         }
 
+    def test_parse_has_any(self):
+        expr = 'Q2.has_any([1, 2, 3])'
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'any',
+            'args': [
+                {
+                    'variable': 'Q2'
+                },
+                {
+                    'value': [1, 2, 3]
+                }
+            ]
+        }
+
+        expr = 'Q2.has_any(1)'
+        with pytest.raises(ValueError):
+            parse_expr(expr)
+
+        expr = 'Q2.has_any(Q3)'
+        with pytest.raises(ValueError):
+            parse_expr(expr)
+
+    def test_parse_has_all(self):
+        expr = 'Q2.has_all([1, 2, 3])'
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'all',
+            'args': [
+                {
+                    'variable': 'Q2'
+                },
+                {
+                    'value': [1, 2, 3]
+                }
+            ]
+        }
+
+        expr = 'Q2.has_all(1)'
+        with pytest.raises(ValueError):
+            parse_expr(expr)
+
+        expr = 'Q2.has_all(Q3)'
+        with pytest.raises(ValueError):
+            parse_expr(expr)
+
+    def test_parse_omnibus_rule_2_complex(self):
+        # Lets combine this with the previous one:
+        # 'text': 'diposition code 0 (quotafull)',
+        # 'index_mapper': intersection(
+        #     [{'disposition': [0]}, {'exit_status': [1]}])
+        expr = "(disposition == 0 and exit_status == 1) or " \
+               "(disposition == 0 and exit_status == 0)"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'or',
+            'args': [{
+                    'function': 'and',
+                    'args': [
+                        {
+                            'function': '==',
+                            'args': [
+                                {
+                                    'variable': 'disposition'
+                                },
+                                {
+                                    'value': 0
+                                }
+                            ]
+                        },
+                        {
+                            'function': '==',
+                            'args': [
+                                {
+                                    'variable': 'exit_status'
+                                },
+                                {
+                                    'value': 1
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    'function': 'and',
+                    'args': [
+                        {
+                            'function': '==',
+                            'args': [
+                                {
+                                    'variable': 'disposition'
+                                },
+                                {
+                                    'value': 0
+                                }
+                            ]
+                        },
+                        {
+                            'function': '==',
+                            'args': [
+                                {
+                                    'variable': 'exit_status'
+                                },
+                                {
+                                    'value': 0
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]}
+
+    def test_parse_omnibus_has_any(self):
+        # 'text': 'CompanyTurnover is NA',
+        # 'index_mapper': {'CompanyTurnover': has_any([99])}},
+
+        # 'text': 'Not Private Sector',
+        # 'index_mapper': {'sector': has_any([2, 3, 98, 99])}},
+        expr = "CompanyTurnover.has_any([99])"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'any',
+            'args': [
+                {
+                    'variable': 'CompanyTurnover'
+                },
+                {
+                    'value': [99]
+                }
+            ]
+        }
+
+        expr = "sector.has_any([2, 3, 98, 99])"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'any',
+            'args': [
+                {
+                    'variable': 'sector'
+                },
+                {
+                    'value': [2, 3, 98, 99]
+                }
+            ]
+        }
+
 # 'diposition code 0 (incompletes)':
 # intersection(
 #     [{'disposition': not_any([1])},
@@ -513,9 +659,6 @@ class TestFilterExpressionParsing(TestCase):
 # )
 
 
-# 'text': 'diposition code 0 (quotafull)',
-# 'index_mapper': intersection(
-#     [{'disposition': [0]}, {'exit_status': [1]}])}
 
 
 # 'text': 'sta: nicht aus Deutschland',
@@ -542,11 +685,6 @@ class TestFilterExpressionParsing(TestCase):
 # 'index_mapper': intersection(
 #     [{'age': is_ge(18)}, {'profile_julesage': has_count(0)}])},
 
-# 'text': 'CompanyTurnover is NA',
-# 'index_mapper': {'CompanyTurnover': has_any([99])}},
-
-# 'text': 'Not Private Sector',
-# 'index_mapper': {'sector': has_any([2, 3, 98, 99])}},
 
 # 'text': 'Not the right decision maker',
 # 'index_mapper': {'DecisionMaking2': not_any(frange('1-10'))}},
@@ -554,3 +692,15 @@ class TestFilterExpressionParsing(TestCase):
 # 'text': 'Duplicate identity',
 # 'columns': 'identity',
 # 'duplicated': True}])
+
+
+# {  Drop anything missing (not asked/skipped/don't know/missing)
+#     'text': 'DE PET OWNER NaN',
+#     'columns': [
+#                 'age_omnibus_18', 'gender',
+#                 'nielsenregion', ''],
+#     'dropna': True}
+
+
+# { 'text': 'pets_omnibus not codes 1-4',
+#     'index_mapper': {'pets_omnibus': not_any([1, 2, 3, 4])}}]
