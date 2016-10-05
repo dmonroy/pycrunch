@@ -1,14 +1,12 @@
-from pycrunch.elements import Element, JSONObject
-from pycrunch.datasets import parse_expr
+from pycrunch.expressions import parse_expr
+from pycrunch.expressions import process_expr
 
 
 def create_categorical(ds, alias, name, categories, rules, description=''):
     """
-    some docstring
+    method for creating a categorical variable
     """
 
-    print(len(categories), len(rules))
-    print(rules)
     if not ((len(categories) - 1) <= len(rules) <= len(categories)):
         raise ValueError(
             'Amount of rules should match categories (or categories -1')
@@ -23,10 +21,13 @@ def create_categorical(ds, alias, name, categories, rules, description=''):
                 'class': 'categorical',
                 'categories': categories}}}]
 
+    more_args = []
     for rule in rules:
-        args.append(parse_expr(rule, ds, urls=True))
+        more_args.append(parse_expr(rule))
 
-    expr = dict(function='case', args=args)
+    more_args = process_expr(more_args, ds)
+
+    expr = dict(function='case', args=args + more_args)
 
     payload = dict(element='shoji:entity',
                    body=dict(alias=alias,
