@@ -1,9 +1,8 @@
-
 """
 TODO:
-    - validate category_map.combines_ids ids match variable ids
+    - Validate category_map ids
+    -
 """
-
 
 SKELETON = {
     "element": "shoji:entity",
@@ -22,7 +21,7 @@ SKELETON = {
 REQUIRED_VALUES = {"name", "id", "missing", "combined_ids"}
 
 
-def var_name_to_id(ds, varname):
+def var_name_to_url(ds, varname):
     """
     :param ds: The dataset we are gonna inspect
     :param varname: the variable name we want to check
@@ -31,7 +30,7 @@ def var_name_to_id(ds, varname):
     try:
         return ds.variables.by('name')[varname].entity.self
     except KeyError:
-        return None
+        raise KeyError("Variable %s does not exist in Dataset %s" % (varname, ds['body']['name']))
 
 
 def validate_category_map(map):
@@ -40,7 +39,6 @@ def validate_category_map(map):
     :return: a list of dictionary objects that the Crunch Api expects
     """
     for value in map.values():
-        # TODO: combined_ids must be an existing category
         keys = set(value.keys())
         assert keys & REQUIRED_VALUES, (
             "category_map has one or more missing keys of " % REQUIRED_VALUES)
@@ -72,9 +70,7 @@ def combine_categories(ds, from_name, category_map, name, alias, description='')
     :param description: description for the new variable
     :return: the new created variable
     """
-    variable_url = var_name_to_id(ds, from_name)
-    if not variable_url:
-        raise TypeError("Variable %s does not exist in Dataset %s" % (from_name, ds['body']['name']))
+    variable_url = var_name_to_url(ds, from_name)
     categories = validate_category_map(category_map)
     payload = SKELETON.copy()
     payload['body']['name'] = name

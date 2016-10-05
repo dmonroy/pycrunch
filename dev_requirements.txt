@@ -1,8 +1,9 @@
-
-pytest
-mock
-requests
-pandas
-
 # Install pycrunch as development
 -e .
+
+pandas
+mock
+pytest
+pytest-sugar
+requests
+backports.unittest_mock
