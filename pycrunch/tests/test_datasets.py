@@ -1,5 +1,6 @@
 import json
 
+import pytest
 from unittest import TestCase
 from unittest import mock
 
@@ -503,6 +504,52 @@ class TestFilterExpressionParsing(TestCase):
                 }
             ]
         }
+
+    def test_parse_has_any(self):
+        expr = 'Q2.has_any([1, 2, 3])'
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'any',
+            'args': [
+                {
+                    'variable': 'Q2'
+                },
+                {
+                    'value': [1, 2, 3]
+                }
+            ]
+        }
+
+        expr = 'Q2.has_any(1)'
+        with pytest.raises(ValueError):
+            parse_expr(expr)
+
+        expr = 'Q2.has_any(Q3)'
+        with pytest.raises(ValueError):
+            parse_expr(expr)
+
+    def test_parse_has_all(self):
+        expr = 'Q2.has_all([1, 2, 3])'
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'all',
+            'args': [
+                {
+                    'variable': 'Q2'
+                },
+                {
+                    'value': [1, 2, 3]
+                }
+            ]
+        }
+
+        expr = 'Q2.has_all(1)'
+        with pytest.raises(ValueError):
+            parse_expr(expr)
+
+        expr = 'Q2.has_all(Q3)'
+        with pytest.raises(ValueError):
+            parse_expr(expr)
 
 # 'diposition code 0 (incompletes)':
 # intersection(
