@@ -27,7 +27,7 @@ RESPONSE_MAP = {
 class TestRecodes(TestCase):
 
     def test_validate_category_map(self):
-        """ Validate that a variable name returns a valid url """
+        """ Validate we are properly converting the given map of categories """
         expected_map = [
             {
                 "id": 1,
@@ -44,6 +44,17 @@ class TestRecodes(TestCase):
         ]
         modified_map = validate_category_map(CATEGORY_MAP)
         assert modified_map == expected_map
+
+    def test_validate_range_expression(self):
+        test_map = {
+            1: {
+                "name": "China",
+                "missing": False,
+                "combined_ids": range(1, 5)
+            }
+        }
+        modified_map = validate_category_map(test_map)
+        assert modified_map[0]['combined_ids'] == [1, 2, 3, 4]
 
     def test_combine_categories(self):
         ds = mock.MagicMock()
