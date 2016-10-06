@@ -5,6 +5,7 @@ from pycrunch.recodes import validate_category_map
 from pycrunch.recodes import combine_categories
 from pycrunch.recodes import combine_responses
 
+
 CATEGORY_MAP = {
     1: {
         "name": "China",
@@ -24,7 +25,7 @@ RESPONSE_MAP = {
 
 
 class TestRecodes(TestCase):
-    
+
     def test_validate_category_map(self):
         """ Validate that a variable name returns a valid url """
         expected_map = [
