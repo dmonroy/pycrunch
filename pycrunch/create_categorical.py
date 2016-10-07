@@ -2,7 +2,7 @@ from pycrunch.expressions import parse_expr
 from pycrunch.expressions import process_expr
 
 
-def create_categorical(ds, alias, name, categories, rules, description=''):
+def create_categorical(ds, categories, rules, name, alias, description=''):
     """
     method for creating a categorical variable
     """
