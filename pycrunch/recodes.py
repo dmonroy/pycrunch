@@ -38,14 +38,14 @@ def aliases_to_urls(ds, variable, response_map):
     :param response_map: mapping of new subvariables
     :return:
     """
-    suvars = ds.variables.by('name')[variable].entity.subvariables.by('name')
+    suvars = ds.variables.by('alias')[variable].entity.subvariables.by('alias')
     mapped_urls = {}
     for key, values in response_map.items():
         try:
             mapped_urls[key] = [suvars[x].entity.self for x in values]
         except KeyError:
             raise KeyError(
-                "Unexistant variables %s in Dataset %s" % (values, ds['body']['name']))
+                "Unexistant variables %s in Dataset %s" % (values, ds['body']['alias']))
     return mapped_urls
 
 
