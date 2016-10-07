@@ -1,7 +1,7 @@
 from unittest import TestCase
 from unittest import mock
 
-from pycrunch.create_categorical import create_categorical
+from pycrunch.transformations import create_categorical
 
 
 categories = [
@@ -24,8 +24,7 @@ class TestCreateCategorical(TestCase):
             'gender': entity_mock
         }
 
-        test = create_categorical(ds, 'alias', 'name',
-                                  categories, rules, 'description')
+        test = create_categorical(ds, categories, rules, 'name', 'alias', 'description')
         call = ds.variables.create.call_args_list[0][0][0]
         payload = {
           "body": {
