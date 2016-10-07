@@ -393,8 +393,43 @@ class TestExpressionParsing(TestCase):
             ]
         }
 
+        # Tuples should also be supported.
+        expr = "web_browser in ('abc', 'dfg', 'hij')"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'in',
+            'args': [
+                {
+                    'variable': 'web_browser'
+                },
+                {
+                    'value': ['abc', 'dfg', 'hij']
+                }
+            ]
+        }
+
     def test_parse_value_not_in_list(self):
         expr = 'country not in [1, 2, 3]'
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': 'in',
+                    'args': [
+                        {
+                            'variable': 'country'
+                        },
+                        {
+                            'value': [1, 2, 3]
+                        }
+                    ]
+                }
+            ]
+        }
+
+        # Tuples should also be supported.
+        expr = 'country not in (1, 2, 3)'
         expr_obj = parse_expr(expr)
         assert expr_obj == {
             'function': 'not',
@@ -462,6 +497,20 @@ class TestExpressionParsing(TestCase):
             ]
         }
 
+        expr = 'Q2.has_any((1, 2, 3))'
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'any',
+            'args': [
+                {
+                    'variable': 'Q2'
+                },
+                {
+                    'value': [1, 2, 3]
+                }
+            ]
+        }
+
         expr = 'Q2.has_any(1)'
         with pytest.raises(ValueError):
             parse_expr(expr)
@@ -472,6 +521,20 @@ class TestExpressionParsing(TestCase):
 
     def test_parse_has_all(self):
         expr = 'Q2.has_all([1, 2, 3])'
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'all',
+            'args': [
+                {
+                    'variable': 'Q2'
+                },
+                {
+                    'value': [1, 2, 3]
+                }
+            ]
+        }
+
+        expr = 'Q2.has_all((1, 2, 3))'
         expr_obj = parse_expr(expr)
         assert expr_obj == {
             'function': 'all',

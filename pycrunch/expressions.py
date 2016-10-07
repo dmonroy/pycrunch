@@ -104,7 +104,7 @@ def parse_expr(expr):
                 return 'in'
             elif isinstance(node, ast.NotIn):
                 return NOT_IN
-            elif isinstance(node, ast.List):
+            elif isinstance(node, ast.List) or isinstance(node, ast.Tuple):
                 _list = fields[0][1]
                 if not (all(isinstance(el, ast.Str) for el in _list) or
                         all(isinstance(el, ast.Num) for el in _list)):
