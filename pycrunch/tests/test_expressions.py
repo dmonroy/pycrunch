@@ -260,6 +260,7 @@ class TestExpressionParsing(TestCase):
                 }
             ]
         }
+
         expr = "starttdate != arrivedate"
         expr_obj = parse_expr(expr)
         assert expr_obj == {
@@ -273,6 +274,7 @@ class TestExpressionParsing(TestCase):
                 }
             ]
         }
+
         expr = "starttdate < arrivedate"
         expr_obj = parse_expr(expr)
         assert expr_obj == {
@@ -286,6 +288,7 @@ class TestExpressionParsing(TestCase):
                 }
             ]
         }
+
         expr = "starttdate <= arrivedate"
         expr_obj = parse_expr(expr)
         assert expr_obj == {
@@ -299,6 +302,7 @@ class TestExpressionParsing(TestCase):
                 }
             ]
         }
+
         expr = "starttdate > arrivedate"
         expr_obj = parse_expr(expr)
         assert expr_obj == {
@@ -689,6 +693,212 @@ class TestExpressionParsing(TestCase):
 
         with pytest.raises(ValueError):
             parse_expr("identity.duplicates(False)")
+
+    def test_parse_helper_functions(self):
+        # One variable.
+        expr = "valid(birthyear)"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'is_valid',
+            'args': [
+                {
+                    'variable': 'birthyear'
+                }
+            ]
+        }
+
+        expr = "missing(birthyear)"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'is_missing',
+            'args': [
+                {
+                    'variable': 'birthyear'
+                }
+            ]
+        }
+
+        # One variable, negated.
+        expr = "not valid(birthyear)"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': 'is_valid',
+                    'args': [
+                        {
+                            'variable': 'birthyear'
+                        }
+                    ]
+                }
+            ]
+        }
+
+        expr = "not missing(birthyear)"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': 'is_missing',
+                    'args': [
+                        {
+                            'variable': 'birthyear'
+                        }
+                    ]
+                }
+            ]
+        }
+
+        # Multiple variables.
+        expr = "valid(birthyear, birthmonth)"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'and',
+            'args': [
+                {
+                    'function': 'is_valid',
+                    'args': [
+                        {
+                            'variable': 'birthyear'
+                        }
+                    ]
+                },
+                {
+                    'function': 'is_valid',
+                    'args': [
+                        {
+                            'variable': 'birthmonth'
+                        }
+                    ]
+                }
+            ]
+        }
+
+        expr = "missing(birthyear, birthmonth)"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'and',
+            'args': [
+                {
+                    'function': 'is_missing',
+                    'args': [
+                        {
+                            'variable': 'birthyear'
+                        }
+                    ]
+                },
+                {
+                    'function': 'is_missing',
+                    'args': [
+                        {
+                            'variable': 'birthmonth'
+                        }
+                    ]
+                }
+            ]
+        }
+
+        # Multiple variables, negated.
+        expr = "not valid(birthyear, birthmonth)"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': 'and',
+                    'args': [
+                        {
+                            'function': 'is_valid',
+                            'args': [
+                                {
+                                    'variable': 'birthyear'
+                                }
+                            ]
+                        },
+                        {
+                            'function': 'is_valid',
+                            'args': [
+                                {
+                                    'variable': 'birthmonth'
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+
+        expr = "not missing(birthyear, birthmonth)"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': 'and',
+                    'args': [
+                        {
+                            'function': 'is_missing',
+                            'args': [
+                                {
+                                    'variable': 'birthyear'
+                                }
+                            ]
+                        },
+                        {
+                            'function': 'is_missing',
+                            'args': [
+                                {
+                                    'variable': 'birthmonth'
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+
+        # More advanced combinations.
+        expr = "caseid < 12345 and missing(birthyear, birthmonth)"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'and',
+            'args': [
+                {
+                    'function': '<',
+                    'args': [
+                        {
+                            'variable': 'caseid'
+                        },
+                        {
+                            'value': 12345
+                        }
+                    ]
+                },
+                {
+                    'function': 'and',
+                    'args': [
+                        {
+                            'function': 'is_missing',
+                            'args': [
+                                {
+                                    'variable': 'birthyear'
+                                }
+                            ]
+                        },
+                        {
+                            'function': 'is_missing',
+                            'args': [
+                                {
+                                    'variable': 'birthmonth'
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
 
 
 # 'diposition code 0 (incompletes)':

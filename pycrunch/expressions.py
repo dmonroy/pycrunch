@@ -49,10 +49,22 @@ NOT_IN = object()
 
 def parse_expr(expr):
 
+    crunch_func_map = {
+        'valid': 'is_valid',
+        'missing': 'is_missing'
+    }
+
+    crunch_method_map = {
+        'has_any': 'any',
+        'has_all': 'all',
+        'duplicates': 'duplicates'
+    }
+
     def _parse(node, parent=None):
         obj = {}
         args = []
         op = None
+        func_type = None
 
         if isinstance(node, ast.AST):
             # Get the current node fields.
@@ -61,6 +73,12 @@ def parse_expr(expr):
             # "Terminal" nodes. Recursion ends with these guys.
             if isinstance(node, ast.Name):
                 _id = fields[0][1]
+
+                # A function identifier.
+                if getattr(node, '_func_type', None) == 'function':
+                    return _id
+
+                # A variable identifier.
                 return {
                     'variable': _id
                 }
@@ -107,11 +125,6 @@ def parse_expr(expr):
                 _id = _parse(_id_node, parent=node)
 
                 # The 'method'.
-                crunch_method_map = {
-                    'has_any': 'any',
-                    'has_all': 'all',
-                    'duplicates': 'duplicates'
-                }
                 method = fields[1][1]
                 if method not in crunch_method_map.keys():
                     raise ValueError
@@ -138,34 +151,50 @@ def parse_expr(expr):
                         left = _parse(_val, parent=node)
                         args.append(left)
                     elif _name == 'func' and isinstance(_val, ast.Attribute):
+                        # Method-like call. Example:
+                        #       variable.has_any([1,2])
+                        func_type = 'method'
+                        setattr(_val, '_func_type', func_type)
                         left, op = _parse(_val, parent=node)
                         args.append(left)
+                    elif _name == 'func' and isinstance(_val, ast.Name):
+                        # Function call. Example:
+                        #       valid(birthyear, birthmonth)
+                        func_type = 'function'
+                        setattr(_val, '_func_type', func_type)
+                        _id = _parse(_val, parent=node)
+                        if _id not in crunch_func_map.keys():
+                            raise ValueError
+                        op = crunch_func_map[_id]
                     elif _name == 'ops':
                         if len(_val) != 1:
                             raise ValueError
                         op = _parse(_val[0], parent=node)
                     elif _name == 'comparators' or _name == 'args':  # right
-                        if len(_val) > 1:
-                            raise ValueError
-                        elif len(_val) == 0:
+                        if len(_val) == 0:
                             continue
 
-                        if op == 'duplicates':
-                            # No parameters allowed for the 'duplicates' method.
-                            raise ValueError
-
-                        right = _parse(_val[0], parent=node)
-
-                        # For method calls, we only allow list-of-int
-                        # parameters.
-                        if _name == 'args':
-                            if 'value' not in right \
-                                    or not isinstance(right['value'], list):
+                        if func_type == 'method':
+                            if len(_val) > 1:
                                 raise ValueError
 
-                        args.append(right)
+                            if op == 'duplicates':
+                                # No parameters allowed for 'duplicates'.
+                                raise ValueError
+
+                        for arg in _val:
+                            right = _parse(arg, parent=node)
+
+                            # For method calls, we only allow list-of-int
+                            # parameters.
+                            if _name == 'args' and func_type == 'method':
+                                if 'value' not in right \
+                                        or not isinstance(right['value'], list):
+                                    raise ValueError
+
+                            args.append(right)
                     elif _name in ('keywords', 'starargs', 'kwargs') and _val:
-                        # We don't support these in method calls.
+                        # We don't support these in function/method calls.
                         raise ValueError
                     elif _name == 'operand' and isinstance(node, ast.UnaryOp):
                         right = _parse(_val, parent=node)
@@ -186,6 +215,12 @@ def parse_expr(expr):
                                 }
                             ]
                         }
+                    elif op in crunch_func_map.values() \
+                            and isinstance(args, list) and len(args) > 1:
+                        obj = {
+                            'function': 'and',
+                            'args': []
+                        }
                     else:
                         obj = {
                             'function': op,
@@ -196,6 +231,15 @@ def parse_expr(expr):
                     if op is NOT_IN:
                         # Special treatment for the args in a `not in` expr.
                         obj['args'][0]['args'] = args
+                    elif op in crunch_func_map.values() \
+                            and isinstance(args, list) and len(args) > 1:
+                        for arg in args:
+                            obj['args'].append(
+                                {
+                                    'function': op,
+                                    'args': [arg]
+                                }
+                            )
                     else:
                         obj['args'] = args
 
