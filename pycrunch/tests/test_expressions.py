@@ -493,6 +493,29 @@ class TestExpressionParsing(TestCase):
         with pytest.raises(ValueError):
             parse_expr(expr)
 
+    def test_parse_has_count(self):
+        expr = 'Q2.has_count(1)'
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'has_count',
+            'args': [
+                {
+                    'variable': 'Q2'
+                },
+                {
+                    'value': 1
+                }
+            ]
+        }
+
+        expr = 'Q2.has_count(1, 2)'
+        with pytest.raises(ValueError):
+            parse_expr(expr)
+
+        expr = 'Q2.has_count([1,2])'
+        with pytest.raises(ValueError):
+            parse_expr(expr)
+
     def test_parse_omnibus_rule_2_complex(self):
         # Lets combine this with the previous one:
         # 'text': 'diposition code 0 (quotafull)',

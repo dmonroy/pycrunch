@@ -57,7 +57,8 @@ def parse_expr(expr):
     crunch_method_map = {
         'has_any': 'any',
         'has_all': 'all',
-        'duplicates': 'duplicates'
+        'duplicates': 'duplicates',
+        'has_count': 'has_count'
     }
 
     def _parse(node, parent=None):
@@ -187,12 +188,18 @@ def parse_expr(expr):
 
                             # For method calls, we only allow list-of-int
                             # parameters.
-                            if _name == 'args' and func_type == 'method':
+                            if _name == 'args' and func_type == 'method' \
+                                    and op != 'has_count':
                                 if 'value' not in right \
                                         or not isinstance(right['value'], list):
                                     raise ValueError
 
                             args.append(right)
+
+                        if op == 'has_count':
+                            if not isinstance(args[-1].get('value'), int):
+                                raise ValueError
+
                     elif _name in ('keywords', 'starargs', 'kwargs') and _val:
                         # We don't support these in function/method calls.
                         raise ValueError
