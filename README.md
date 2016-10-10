@@ -331,7 +331,7 @@ cat_map = {
     3: {
         'label': 'Unfavorable',
         'missing': False,
-        'num_value': 2,
+        'num_value': 3,
         'ids': [4, 5]
     }
 }
