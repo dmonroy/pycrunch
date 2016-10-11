@@ -272,7 +272,8 @@ def process_expr(obj, ds):
                 _process(val, variables)
             elif isinstance(val, list) or isinstance(val, tuple):
                 for subitem in val:
-                    _process(subitem, variables)
+                    if isinstance(subitem, dict):
+                        _process(subitem, variables)
             elif key == 'variable':
                 obj[key] = variables[val].entity.self
         return obj
