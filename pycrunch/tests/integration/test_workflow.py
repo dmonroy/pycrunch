@@ -72,44 +72,55 @@ ROWS = [
 ]
 
 
-@pytest.mark.skipif(None in (CRUNCH_URL, CRUNCH_USER, CRUNCH_PASSWORD),
-                    reason='Invalid test credentials.')
-def test_basic_pycrunch_workflow():
-    # Login.
-    site = pycrunch.connect(CRUNCH_USER, CRUNCH_PASSWORD, CRUNCH_URL)
-    assert isinstance(site, pycrunch.shoji.Catalog)
+def invalid_credentials():
+    return any(
+        item is None
+        for item in (CRUNCH_URL, CRUNCH_USER, CRUNCH_PASSWORD)
+    )
 
-    # Create dataset.
+
+@pytest.fixture(scope='module')
+def site():
+    if invalid_credentials():
+        pytest.skip('Invalid test credentials.')
+
+    return pycrunch.connect(CRUNCH_USER, CRUNCH_PASSWORD, CRUNCH_URL)
+
+
+@pytest.fixture(scope='module')
+def dataset(site):
+    if invalid_credentials():
+        pytest.skip('Invalid test credentials.')
+
     ds = site.datasets.create(DATASET_DOC).refresh()
-    assert ds
+    yield ds
+    ds.delete()
+
+
+@pytest.mark.skipif(invalid_credentials(), reason='Invalid test credentials.')
+def test_basic_pycrunch_workflow(site, dataset):
+    import pdb; pdb.set_trace()
+
+    # Ensure fixtures are OK.
+    assert isinstance(site, pycrunch.shoji.Catalog)
+    assert isinstance(dataset, pycrunch.shoji.Entity)
 
     # Load initial data.
-    pycrunch.importing.importer.append_rows(ds, ROWS)
+    pycrunch.importing.importer.append_rows(dataset, ROWS)
 
     # Check the number of rows.
-    table = site.session.get(ds.fragments.table, params=dict(limit=100)).payload
+    table = site.session.get(dataset.fragments.table, params=dict(limit=100)).payload
     col = list(table.data.values())[0]
     assert len(col) == len(ROWS) - 1  # excluding the header
 
     # Set an exclusion filter.
-    pycrunch.datasets.exclusion(ds, 'identity < 6')
-    table = site.session.get(ds.fragments.table, params=dict(limit=100)).payload
+    pycrunch.datasets.exclusion(dataset, 'identity < 6')
+    table = site.session.get(dataset.fragments.table, params=dict(limit=100)).payload
     col = list(table.data.values())[0]
     assert len(col) == 5
 
     # Clear the exclusion filter.
-    pycrunch.datasets.exclusion(ds)
-    table = site.session.get(ds.fragments.table, params=dict(limit=100)).payload
+    pycrunch.datasets.exclusion(dataset)
+    table = site.session.get(dataset.fragments.table, params=dict(limit=100)).payload
     col = list(table.data.values())[0]
     assert len(col) == len(ROWS) - 1  # excluding the header
-
-    # Delete dataset.
-    ds_url = ds.self
-    ds.delete()
-    with pytest.raises(pycrunch.ClientError):
-        site.session.get(ds_url)
-
-
-if __name__ == '__main__':
-    test_basic_pycrunch_workflow()
-    exit(0)
