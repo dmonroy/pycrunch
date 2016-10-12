@@ -1,9 +1,10 @@
-import os
+#!/usr/bin/env python
 
-import pytest
+import os
 
 import pycrunch
 from pycrunch import pandaslib
+
 
 CRUNCH_URL = os.environ.get('CRUNCH_TEST_URL')
 CRUNCH_USER = os.environ.get('CRUNCH_TEST_USER')
@@ -257,49 +258,44 @@ def invalid_credentials():
     )
 
 
-@pytest.fixture(scope='module')
-def site():
-    if invalid_credentials():
-        pytest.skip('Invalid test credentials.')
+def main():
+    assert not invalid_credentials()
 
-    return pycrunch.connect(CRUNCH_USER, CRUNCH_PASSWORD, CRUNCH_URL)
-
-
-@pytest.fixture(scope='module')
-def dataset(site):
-    if invalid_credentials():
-        pytest.skip('Invalid test credentials.')
-
-    ds = site.datasets.create(DATASET_DOC).refresh()
-    yield ds
-    ds.delete()
-
-
-@pytest.mark.skipif(invalid_credentials(), reason='Invalid test credentials.')
-def test_basic_pycrunch_workflow(site, dataset):
-    # Ensure fixtures are OK.
+    # Login.
+    site = pycrunch.connect(CRUNCH_USER, CRUNCH_PASSWORD, CRUNCH_URL)
     assert isinstance(site, pycrunch.shoji.Catalog)
+
+    # Create the test dataset.
+    dataset = site.datasets.create(DATASET_DOC).refresh()
     assert isinstance(dataset, pycrunch.shoji.Entity)
 
-    # Load initial data.
-    pycrunch.importing.importer.append_rows(dataset, ROWS)
+    try:
+        # Load initial data.
+        pycrunch.importing.importer.append_rows(dataset, ROWS)
 
-    # Check the initial number of rows.
-    df = pandaslib.dataframe(dataset)
-    assert len(df) == len(ROWS) - 1  # excluding the header
+        # Check the initial number of rows.
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == len(ROWS) - 1  # excluding the header
 
-    # Set an exclusion filter.
-    pycrunch.datasets.exclusion(dataset, 'identity < 6')
-    df = pandaslib.dataframe(dataset)
-    assert len(df) == 5
+        # Set an exclusion filter.
+        pycrunch.datasets.exclusion(dataset, 'identity < 6')
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 5
 
-    # More complex exclusion filter involving a categorical variable.
-    expr = "not (speak_spanish in (1, 2) and operating_system == 'Linux')"
-    pycrunch.datasets.exclusion(dataset, expr)
-    df = pandaslib.dataframe(dataset)
-    assert len(df) == 2
+        # More complex exclusion filter involving a categorical variable.
+        expr = "not (speak_spanish in (1, 2) and operating_system == 'Linux')"
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 2
 
-    # Clear the exclusion filter.
-    pycrunch.datasets.exclusion(dataset)
-    df = pandaslib.dataframe(dataset)
-    assert len(df) == len(ROWS) - 1  # excluding the header
+        # Clear the exclusion filter.
+        pycrunch.datasets.exclusion(dataset)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == len(ROWS) - 1  # excluding the header
+    finally:
+        dataset.delete()
+
+
+if __name__ == '__main__':
+    main()
+    exit(0)
