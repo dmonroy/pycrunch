@@ -31,5 +31,5 @@ Crunch Datasets:
 [Datasets](docs/datasets.md)
 
 Dataset Manipulation:
-[Dataset Manipulation](docts/manipulation.md)
+[Manipulation](docs/manipulation.md)
     
