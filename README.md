@@ -21,8 +21,15 @@ Documentation
 Specific documentation about the existing methods and examples can be 
 found in the following index:
 
+Brief introduction:
 [Introduction](docs/introduction.md)
+
+How to deal with Pycrunch:
 [Getting Started](docs/navigation.md)
+
+Crunch Datasets:
 [Datasets](docs/datasets.md)
+
+Dataset Manipulation:
 [Dataset Manipulation](docts/manipulation.md)
     
