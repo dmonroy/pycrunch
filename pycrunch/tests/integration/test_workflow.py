@@ -3,6 +3,7 @@ import os
 import pytest
 
 import pycrunch
+from pycrunch import pandaslib
 
 
 CRUNCH_URL = os.environ.get('CRUNCH_TEST_URL')
@@ -106,19 +107,16 @@ def test_basic_pycrunch_workflow(site, dataset):
     # Load initial data.
     pycrunch.importing.importer.append_rows(dataset, ROWS)
 
-    # Check the number of rows.
-    table = site.session.get(dataset.fragments.table, params=dict(limit=100)).payload
-    col = list(table.data.values())[0]
-    assert len(col) == len(ROWS) - 1  # excluding the header
+    # Check the initial number of rows.
+    df = pandaslib.dataframe(dataset)
+    assert len(df) == len(ROWS) - 1  # excluding the header
 
     # Set an exclusion filter.
     pycrunch.datasets.exclusion(dataset, 'identity < 6')
-    table = site.session.get(dataset.fragments.table, params=dict(limit=100)).payload
-    col = list(table.data.values())[0]
-    assert len(col) == 5
+    df = pandaslib.dataframe(dataset)
+    assert len(df) == 5
 
     # Clear the exclusion filter.
     pycrunch.datasets.exclusion(dataset)
-    table = site.session.get(dataset.fragments.table, params=dict(limit=100)).payload
-    col = list(table.data.values())[0]
-    assert len(col) == len(ROWS) - 1  # excluding the header
+    df = pandaslib.dataframe(dataset)
+    assert len(df) == len(ROWS) - 1  # excluding the header
