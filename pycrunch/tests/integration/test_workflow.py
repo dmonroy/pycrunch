@@ -99,8 +99,6 @@ def dataset(site):
 
 @pytest.mark.skipif(invalid_credentials(), reason='Invalid test credentials.')
 def test_basic_pycrunch_workflow(site, dataset):
-    import pdb; pdb.set_trace()
-
     # Ensure fixtures are OK.
     assert isinstance(site, pycrunch.shoji.Catalog)
     assert isinstance(dataset, pycrunch.shoji.Entity)
