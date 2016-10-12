@@ -293,6 +293,12 @@ def test_basic_pycrunch_workflow(site, dataset):
     df = pandaslib.dataframe(dataset)
     assert len(df) == 5
 
+    # More complex exclusion filter involving a categorical variable.
+    expr = "not (speak_spanish in (1, 2) and operating_system == 'Linux')"
+    pycrunch.datasets.exclusion(dataset, expr)
+    df = pandaslib.dataframe(dataset)
+    assert len(df) == 2
+
     # Clear the exclusion filter.
     pycrunch.datasets.exclusion(dataset)
     df = pandaslib.dataframe(dataset)
