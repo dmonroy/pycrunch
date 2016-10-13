@@ -14,14 +14,29 @@ rules = ['gender == 1', 'gender == 2']
 
 class TestCreateCategorical(TestCase):
 
+    ds_url = 'http://test.crunch.io/api/datasets/123/'
+
     def test_create_categorical(self):
+        var_id = '0001'
+        var_type = 'categorical'
+        var_url = '%svariables/%s/' % (self.ds_url, var_id)
+
+        # Mocking setup.
+        def _get(*args):
+            if args[0] == 'id':
+                return var_id
+            if args[0] == 'type':
+                return var_type
+            return args[0]
+
         ds = mock.MagicMock()
-        var_url = 'http://test.crunch.io/api/datasets/123/variables/0001/'
-        ds.entity.self = 'http://test.crunch.io/api/datasets/123/'
-        entity_mock = mock.MagicMock()
-        entity_mock.entity.self = var_url
+        ds.self = self.ds_url
+        _var_mock = mock.MagicMock()
+        _var_mock.entity.self = var_url
+        _var_mock.__getitem__.side_effect = _get
+        _var_mock.get.side_effect = _get
         ds.variables.by.return_value = {
-            'gender': entity_mock
+            'gender': _var_mock
         }
 
         test = create_categorical(ds, categories, rules, 'name', 'alias', 'description')
