@@ -248,6 +248,8 @@ ROWS = [
     [8,  '10.0.0.8',  'Minix',   '2016-01-01T00:00:00+00:00', 32766, 2,     1,     1,     2,     2, 2, 2, 1, 2],
     [9,  '10.0.0.9',  'FreeBSD', '2016-02-01T00:00:00+00:00', 32767, 1,     1,     1,     32766, 1, 2, 1, 2, 2],
     [10, '10.0.0.10', 'NetBSD',  '2015-03-01T00:00:00+00:00', 2,     4,     3,     4,     1,     2, 2, 1, 2, 2],
+    [11, '10.0.0.10', 'NetBSD',  '2015-03-01T00:01:00+00:00', 2,     4,     3,     4,     1,     1, 1, 1, 1, 1],
+    [12, '10.0.0.10', 'NetBSD',  '2015-03-01T00:02:00+00:00', 2,     4,     3,     4,     1,     2, 2, 2, 2, 2],
 ]
 
 
@@ -277,18 +279,135 @@ def main():
         df = pandaslib.dataframe(dataset)
         assert len(df) == len(ROWS) - 1  # excluding the header
 
-        # Set an exclusion filter.
-        pycrunch.datasets.exclusion(dataset, 'identity < 6')
+        # 1. Exclusion Filter Integration Tests
+
+        # 1.1 Set a simple exclusion filter.
+
+        pycrunch.datasets.exclusion(dataset, 'identity > 5')
         df = pandaslib.dataframe(dataset)
         assert len(df) == 5
 
-        # More complex exclusion filter involving a categorical variable.
-        expr = "not (speak_spanish in (1, 2) and operating_system == 'Linux')"
+        # 1.2 More complex exclusion filters involving a categorical variable.
+
+        expr = 'speak_spanish in [32766]'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 10
+
+        expr = 'speak_spanish in (32766, 32767)'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 9
+
+        expr = 'not (speak_spanish in (1, 2) and operating_system == "Linux")'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
         assert len(df) == 2
 
-        # Clear the exclusion filter.
+        # 1.3 Exclusion filters with `has_any`.
+
+        expr = 'hobbies.has_any([32766])'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 8
+
+        expr = 'not hobbies.has_any([32766])'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 4
+
+        expr = 'hobbies.has_any([32766, 32767])'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 7
+
+        expr = 'music.has_any([32766])'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 12
+
+        expr = 'music.has_any([1])'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 1
+
+        expr = 'music.has_any([1, 2])'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 0
+
+        # 1.4 Exclusion filters with `has_all`.
+
+        expr = 'hobbies.has_all([32767])'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 11
+
+        expr = 'not hobbies.has_all([32767])'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 1
+
+        expr = 'music.has_all([1])'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 11
+
+        expr = 'music.has_all([1]) or music.has_all([2])'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 10
+
+        expr = 'not ( music.has_all([1]) or music.has_all([2]) )'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 2
+
+        # 1.5 Exclusion filters with `duplicates`.
+
+        expr = 'ip_address.duplicates()'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 10
+
+        # 1.6 Exclusion filters with `valid` and `missing`.
+
+        expr = 'valid(speak_spanish)'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 3
+
+        expr = 'not valid(speak_spanish)'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 9
+
+        expr = 'missing(speak_spanish)'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 9
+
+        expr = 'missing(hobbies)'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 11
+
+        expr = 'not missing(hobbies)'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 1
+
+        expr = 'valid(hobbies)'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 5
+
+        expr = 'not valid(hobbies)'
+        pycrunch.datasets.exclusion(dataset, expr)
+        df = pandaslib.dataframe(dataset)
+        assert len(df) == 7
+
+        # 1.7 Clear the exclusion filter.
         pycrunch.datasets.exclusion(dataset)
         df = pandaslib.dataframe(dataset)
         assert len(df) == len(ROWS) - 1  # excluding the header

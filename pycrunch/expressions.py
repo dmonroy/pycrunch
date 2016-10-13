@@ -265,20 +265,105 @@ def process_expr(obj, ds):
     (or a list of new expression objects) with all variable aliases
     transformed into variable URLs, just as the crunch API needs them to be.
     """
+    base_url = ds.self
+    variables = ds.variables.by('alias')
 
     def _process(obj, variables):
+        op = None
+        arrays = []
+        values = []
+        subvariables = []
+
         for key, val in obj.items():
             if isinstance(val, dict):
-                _process(val, variables)
+                obj[key] = _process(val, variables)
             elif isinstance(val, list) or isinstance(val, tuple):
+                subitems = []
                 for subitem in val:
                     if isinstance(subitem, dict):
-                        _process(subitem, variables)
+                        subitem = _process(subitem, variables)
+                        if 'subvariables' in subitem:
+                            arrays.append(subitem.pop('subvariables'))
+                        elif 'value' in subitem:
+                            values.append(subitem)
+                    subitems.append(subitem)
+                obj[key] = subitems
             elif key == 'variable':
-                obj[key] = variables[val].entity.self
-        return obj
+                var = variables.get(val)
+                if var:
+                    obj[key] = '%svariables/%s/' % (base_url, var['id'])
 
-    variables = ds.variables.by('alias')
+                    if var['type'] in ('categorical_array', 'multiple_response'):
+                        subvariables = var.get('subvariables', [])
+                else:
+                    raise ValueError("Invalid variable alias '%s" % val)
+            elif key == 'function':
+                op = val
+
+        if subvariables:
+            obj['subvariables'] = subvariables
+
+        if arrays and op in ('any', 'all', 'is_valid', 'is_missing'):
+            # Support for array variables.
+
+            if len(arrays) != 1:
+                raise ValueError
+
+            real_op = 'in'
+            expansion_op = 'or'
+            if op == 'all':
+                real_op = '=='
+                expansion_op = 'and'
+            elif op == 'is_valid':
+                real_op = 'all_valid'
+            elif op == 'is_missing':
+                real_op = 'all_missing'
+
+            if op in ('is_valid', 'is_missing'):
+                if len(values) != 0:
+                    raise ValueError
+
+                # Just swap the op. Yep, that's it.
+                obj['function'] = real_op
+            else:
+                if len(values) != 1:
+                    raise ValueError
+
+                subvariables = arrays[0]
+                value = values[0]
+
+                if op == 'all':
+                    if len(value['value']) != 1:
+                        raise ValueError
+                    value['value'] = value['value'][0]
+
+                if len(subvariables) == 1:
+                    obj['function'] = real_op
+                    obj['args'][0] = {'variable': subvariables[0]}
+                    obj['args'][1] = value
+                else:
+                    obj = {
+                        'function': expansion_op,
+                        'args': []
+                    }
+                    args_ref = obj['args']
+                    for i, subvar in enumerate(subvariables):
+                        args_ref.append(
+                            {
+                                'function': real_op,
+                                'args': [
+                                    {'variable': subvar},
+                                    value
+                                ]
+                            }
+                        )
+                        if i < len(subvariables) - 2:
+                            args_ref.append(
+                                {'function': expansion_op, 'args': []}
+                            )
+                            args_ref = args_ref[-1]['args']
+
+        return obj
 
     if isinstance(obj, list):
         return [

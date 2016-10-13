@@ -1,7 +1,9 @@
 import pytest
+from unittest import mock
 from unittest import TestCase
 
 from pycrunch.datasets import parse_expr
+from pycrunch.datasets import process_expr
 
 
 class TestExpressionParsing(TestCase):
@@ -1041,3 +1043,657 @@ class TestExpressionParsing(TestCase):
 
 # { 'text': 'pets_omnibus not codes 1-4',
 #     'index_mapper': {'pets_omnibus': not_any([1, 2, 3, 4])}}]
+
+
+class TestExpressionProcessing(TestCase):
+
+    @staticmethod
+    def _build_get_func(**kwargs):
+        props = {}
+        props.update(kwargs)
+
+        def _get(*args):
+            return props.get(args[0], args[0])
+
+        return _get
+
+    def test_transform_alias_to_var_id(self):
+        ds_url = 'http://test.crunch.io/api/datasets/123/'
+        var_id = '0001'
+        var_type = 'numeric'
+        var_url = '%svariables/%s/' % (ds_url, var_id)
+
+        # Mock the dataset.
+        _get_func = self._build_get_func(id=var_id, type=var_type)
+        ds = mock.MagicMock()
+        ds.self = ds_url
+        _var_mock = mock.MagicMock()
+        _var_mock.entity.self = var_url
+        _var_mock.__getitem__.side_effect = _get_func
+        _var_mock.get.side_effect = _get_func
+        ds.variables.by.return_value = {
+            'age': _var_mock
+        }
+
+        expr_obj = process_expr(parse_expr('age == 1'), ds)
+
+        assert expr_obj == {
+            'function': '==',
+            'args': [
+                {
+                    'variable': var_url
+                },
+                {
+                    'value': 1
+                }
+            ]
+        }
+
+    def test_array_expansion_single_subvariable(self):
+        ds_url = 'http://test.crunch.io/api/datasets/123/'
+        var_id = '0001'
+        var_type = 'categorical_array'
+        var_url = '%svariables/%s/' % (ds_url, var_id)
+        subvariables = [
+            '%ssubvariables/0001/' % var_url
+        ]
+
+        # Mock the dataset.
+        _get_func = self._build_get_func(
+            id=var_id, type=var_type, subvariables=subvariables
+        )
+        ds = mock.MagicMock()
+        ds.self = ds_url
+        _var_mock = mock.MagicMock()
+        _var_mock.entity.self = var_url
+        _var_mock.__getitem__.side_effect = _get_func
+        _var_mock.get.side_effect = _get_func
+
+        _var_mock.subvariables = subvariables
+        ds.variables.by.return_value = {
+            'hobbies': _var_mock
+        }
+
+        # Single value.
+        expr_obj = process_expr(parse_expr('hobbies.has_any([32766])'), ds)
+        assert expr_obj == {
+            'function': 'in',
+            'args': [
+                {
+                    'variable': subvariables[0]
+                },
+                {
+                    'value': [32766]
+                }
+            ]
+        }
+
+        expr_obj = process_expr(parse_expr('hobbies.has_all([32766])'), ds)
+        assert expr_obj == {
+            'function': '==',
+            'args': [
+                {
+                    'variable': subvariables[0]
+                },
+                {
+                    'value': 32766
+                }
+            ]
+        }
+
+        # Negated.
+        expr_obj = process_expr(parse_expr('not hobbies.has_any([32766])'), ds)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': 'in',
+                    'args': [
+                        {
+                            'variable': subvariables[0]
+                        },
+                        {
+                            'value': [32766]
+                        }
+                    ]
+                }
+
+            ]
+        }
+
+        expr_obj = process_expr(parse_expr('not hobbies.has_all([32766])'), ds)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': '==',
+                    'args': [
+                        {
+                            'variable': subvariables[0]
+                        },
+                        {
+                            'value': 32766
+                        }
+                    ]
+                }
+
+            ]
+        }
+
+        # Multiple values.
+        expr_obj = process_expr(parse_expr('hobbies.has_any([32766, 32767])'), ds)
+        assert expr_obj == {
+            'function': 'in',
+            'args': [
+                {
+                    'variable': subvariables[0]
+                },
+                {
+                    'value': [32766, 32767]
+                }
+            ]
+        }
+
+        with pytest.raises(ValueError):
+            process_expr(parse_expr('hobbies.has_all([32766, 32767])'), ds)
+
+    def test_array_expansion_multiple_subvariables(self):
+        ds_url = 'http://test.crunch.io/api/datasets/123/'
+        var_id = '0001'
+        var_type = 'categorical_array'
+        var_url = '%svariables/%s/' % (ds_url, var_id)
+        subvariables = [
+            '%ssubvariables/0001/' % var_url,
+            '%ssubvariables/0002/' % var_url,
+            '%ssubvariables/0003/' % var_url,
+            '%ssubvariables/0004/' % var_url
+        ]
+
+        # Mock the dataset.
+        _get_func = self._build_get_func(
+            id=var_id, type=var_type, subvariables=subvariables
+        )
+        ds = mock.MagicMock()
+        ds.self = ds_url
+        _var_mock = mock.MagicMock()
+        _var_mock.entity.self = var_url
+        _var_mock.__getitem__.side_effect = _get_func
+        _var_mock.get.side_effect = _get_func
+
+        _var_mock.subvariables = subvariables
+        ds.variables.by.return_value = {
+            'hobbies': _var_mock
+        }
+
+        # Single values.
+        expr = 'hobbies.has_any([32766])'
+        expr_obj = process_expr(parse_expr(expr), ds)
+        assert expr_obj == {
+            'function': 'or',
+            'args': [
+                {
+                    'function': 'in',
+                    'args': [
+                        {
+                            'variable': subvariables[0]
+                        },
+                        {
+                            'value': [32766]
+                        }
+                    ]
+                },
+                {
+                    'function': 'or',
+                    'args': [
+                        {
+                            'function': 'in',
+                            'args': [
+                                {
+                                    'variable': subvariables[1]
+                                },
+                                {
+                                    'value': [32766]
+                                }
+                            ]
+                        },
+                        {
+                            'function': 'or',
+                            'args': [
+                                {
+                                    'function': 'in',
+                                    'args': [
+                                        {
+                                            'variable': subvariables[2]
+                                        },
+                                        {
+                                            'value': [32766]
+                                        }
+                                    ]
+                                },
+                                {
+                                    'function': 'in',
+                                    'args': [
+                                        {
+                                            'variable': subvariables[3]
+                                        },
+                                        {
+                                            'value': [32766]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+
+        expr = 'hobbies.has_all([32766])'
+        expr_obj = process_expr(parse_expr(expr), ds)
+        assert expr_obj == {
+            'function': 'and',
+            'args': [
+                {
+                    'function': '==',
+                    'args': [
+                        {
+                            'variable': subvariables[0]
+                        },
+                        {
+                            'value': 32766
+                        }
+                    ]
+                },
+                {
+                    'function': 'and',
+                    'args': [
+                        {
+                            'function': '==',
+                            'args': [
+                                {
+                                    'variable': subvariables[1]
+                                },
+                                {
+                                    'value': 32766
+                                }
+                            ]
+                        },
+                        {
+                            'function': 'and',
+                            'args': [
+                                {
+                                    'function': '==',
+                                    'args': [
+                                        {
+                                            'variable': subvariables[2]
+                                        },
+                                        {
+                                            'value': 32766
+                                        }
+                                    ]
+                                },
+                                {
+                                    'function': '==',
+                                    'args': [
+                                        {
+                                            'variable': subvariables[3]
+                                        },
+                                        {
+                                            'value': 32766
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+
+        # Negated.
+        expr = 'not hobbies.has_any([32766])'
+        expr_obj = process_expr(parse_expr(expr), ds)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': 'or',
+                    'args': [
+                        {
+                            'function': 'in',
+                            'args': [
+                                {
+                                    'variable': subvariables[0]
+                                },
+                                {
+                                    'value': [32766]
+                                }
+                            ]
+                        },
+                        {
+                            'function': 'or',
+                            'args': [
+                                {
+                                    'function': 'in',
+                                    'args': [
+                                        {
+                                            'variable': subvariables[1]
+                                        },
+                                        {
+                                            'value': [32766]
+                                        }
+                                    ]
+                                },
+                                {
+                                    'function': 'or',
+                                    'args': [
+                                        {
+                                            'function': 'in',
+                                            'args': [
+                                                {
+                                                    'variable': subvariables[2]
+                                                },
+                                                {
+                                                    'value': [32766]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            'function': 'in',
+                                            'args': [
+                                                {
+                                                    'variable': subvariables[3]
+                                                },
+                                                {
+                                                    'value': [32766]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+
+        expr = 'not hobbies.has_all([32766])'
+        expr_obj = process_expr(parse_expr(expr), ds)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': 'and',
+                    'args': [
+                        {
+                            'function': '==',
+                            'args': [
+                                {
+                                    'variable': subvariables[0]
+                                },
+                                {
+                                    'value': 32766
+                                }
+                            ]
+                        },
+                        {
+                            'function': 'and',
+                            'args': [
+                                {
+                                    'function': '==',
+                                    'args': [
+                                        {
+                                            'variable': subvariables[1]
+                                        },
+                                        {
+                                            'value': 32766
+                                        }
+                                    ]
+                                },
+                                {
+                                    'function': 'and',
+                                    'args': [
+                                        {
+                                            'function': '==',
+                                            'args': [
+                                                {
+                                                    'variable': subvariables[2]
+                                                },
+                                                {
+                                                    'value': 32766
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            'function': '==',
+                                            'args': [
+                                                {
+                                                    'variable': subvariables[3]
+                                                },
+                                                {
+                                                    'value': 32766
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+
+        # Multiple values.
+        expr = 'hobbies.has_any([32766, 32767])'
+        expr_obj = process_expr(parse_expr(expr), ds)
+        assert expr_obj == {
+            'function': 'or',
+            'args': [
+                {
+                    'function': 'in',
+                    'args': [
+                        {
+                            'variable': subvariables[0]
+                        },
+                        {
+                            'value': [32766, 32767]
+                        }
+                    ]
+                },
+                {
+                    'function': 'or',
+                    'args': [
+                        {
+                            'function': 'in',
+                            'args': [
+                                {
+                                    'variable': subvariables[1]
+                                },
+                                {
+                                    'value': [32766, 32767]
+                                }
+                            ]
+                        },
+                        {
+                            'function': 'or',
+                            'args': [
+                                {
+                                    'function': 'in',
+                                    'args': [
+                                        {
+                                            'variable': subvariables[2]
+                                        },
+                                        {
+                                            'value': [32766, 32767]
+                                        }
+                                    ]
+                                },
+                                {
+                                    'function': 'in',
+                                    'args': [
+                                        {
+                                            'variable': subvariables[3]
+                                        },
+                                        {
+                                            'value': [32766, 32767]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+
+        # Multiple values, negated
+        expr = 'not hobbies.has_any([32766, 32767])'
+        expr_obj = process_expr(parse_expr(expr), ds)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': 'or',
+                    'args': [
+                        {
+                            'function': 'in',
+                            'args': [
+                                {
+                                    'variable': subvariables[0]
+                                },
+                                {
+                                    'value': [32766, 32767]
+                                }
+                            ]
+                        },
+                        {
+                            'function': 'or',
+                            'args': [
+                                {
+                                    'function': 'in',
+                                    'args': [
+                                        {
+                                            'variable': subvariables[1]
+                                        },
+                                        {
+                                            'value': [32766, 32767]
+                                        }
+                                    ]
+                                },
+                                {
+                                    'function': 'or',
+                                    'args': [
+                                        {
+                                            'function': 'in',
+                                            'args': [
+                                                {
+                                                    'variable': subvariables[2]
+                                                },
+                                                {
+                                                    'value': [32766, 32767]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            'function': 'in',
+                                            'args': [
+                                                {
+                                                    'variable': subvariables[3]
+                                                },
+                                                {
+                                                    'value': [32766, 32767]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+
+    def test_valid_and_missing_funcs_for_arrays(self):
+        ds_url = 'http://test.crunch.io/api/datasets/123/'
+        var_id = '0001'
+        var_type = 'categorical_array'
+        var_url = '%svariables/%s/' % (ds_url, var_id)
+        subvariables = [
+            '%ssubvariables/0001/' % var_url,
+            '%ssubvariables/0002/' % var_url,
+            '%ssubvariables/0003/' % var_url,
+            '%ssubvariables/0004/' % var_url
+        ]
+
+        # Mock the dataset.
+        _get_func = self._build_get_func(
+            id=var_id, type=var_type, subvariables=subvariables
+        )
+        ds = mock.MagicMock()
+        ds.self = ds_url
+        _var_mock = mock.MagicMock()
+        _var_mock.entity.self = var_url
+        _var_mock.__getitem__.side_effect = _get_func
+        _var_mock.get.side_effect = _get_func
+
+        _var_mock.subvariables = subvariables
+        ds.variables.by.return_value = {
+            'hobbies': _var_mock
+        }
+
+        expr = 'valid(hobbies)'
+        expr_obj = process_expr(parse_expr(expr), ds)
+        assert expr_obj == {
+            'function': 'all_valid',
+            'args': [
+                {
+                    'variable': var_url
+                }
+            ]
+        }
+
+        expr = 'not valid(hobbies)'
+        expr_obj = process_expr(parse_expr(expr), ds)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': 'all_valid',
+                    'args': [
+                        {
+                            'variable': var_url
+                        }
+                    ]
+                }
+            ]
+        }
+
+        expr = 'missing(hobbies)'
+        expr_obj = process_expr(parse_expr(expr), ds)
+        assert expr_obj == {
+            'function': 'all_missing',
+            'args': [
+                {
+                    'variable': var_url
+                }
+            ]
+        }
+
+        expr = 'not missing(hobbies)'
+        expr_obj = process_expr(parse_expr(expr), ds)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': 'all_missing',
+                    'args': [
+                        {
+                            'variable': var_url
+                        }
+                    ]
+                }
+            ]
+        }
