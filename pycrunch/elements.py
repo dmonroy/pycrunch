@@ -96,6 +96,8 @@ def parse_element(session, j):
             j[k] = parse_element(session, v)
 
         elem = j.get("element", None)
+        if elem == 'shoji:entity' and is_dataset(j):
+            return elements['shoji:dataset'](session, **j)
         if elem in elements:
             return elements[elem](session, **j)
         else:
@@ -104,6 +106,11 @@ def parse_element(session, j):
         return [parse_element(session, i) for i in j]
     else:
         return j
+
+
+def is_dataset(j):
+    parts = j['self'].split('/')
+    return 'datasets' in parts and len(parts) == 7
 
 
 class Document(Element):
