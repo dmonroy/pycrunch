@@ -252,20 +252,8 @@ class Entity(elements.Document):
 
 class Dataset(Entity):
     """
-    A class for adding methods to the dataset entity.
-
-    It get's registered as 'shoji:dataset'. elements.parse_element()
-    instanciates this class if the URL of self is considered to be a dataset.
-    At invocation it sets itself back to 'shoji:entity' what crunch
-    is expecting
+    class for adding methods to the dataset entity
     """
-
-    element = "shoji:dataset"
-
-    def __init__(__this__, session, **members):
-
-        Dataset.element = 'shoji:entity'
-        super(Dataset, __this__).__init__(session, **members)
 
     def my_method(self):
         return "I'm a dataset method"

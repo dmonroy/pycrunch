@@ -25,6 +25,7 @@ import json
 
 import six
 
+import pycrunch
 from pycrunch import lemonpy
 from pycrunch.progress import DefaultProgressTracking
 from .version import __version__
@@ -97,7 +98,7 @@ def parse_element(session, j):
 
         elem = j.get("element", None)
         if elem == 'shoji:entity' and is_dataset(j):
-            return elements['shoji:dataset'](session, **j)
+            return pycrunch.shoji.Dataset(session, **j)
         if elem in elements:
             return elements[elem](session, **j)
         else:
