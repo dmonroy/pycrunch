@@ -98,7 +98,7 @@ def parse_element(session, j):
 
         elem = j.get("element", None)
         if elem == 'shoji:entity' and is_dataset(j):
-            return pycrunch.shoji.Dataset(session, **j)
+            return pycrunch.datasets.Dataset(session, **j)
         if elem in elements:
             return elements[elem](session, **j)
         else:

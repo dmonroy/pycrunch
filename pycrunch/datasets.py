@@ -1,9 +1,19 @@
 import json
-
 import six
+
+from .shoji import Entity
 
 from pycrunch.expressions import parse_expr
 from pycrunch.expressions import process_expr
+
+
+class Dataset(Entity):
+    """
+    class for adding methods to the dataset entity
+    """
+
+    def my_method(self):
+        return "I'm a dataset method"
 
 
 def exclusion(ds, expr=None):

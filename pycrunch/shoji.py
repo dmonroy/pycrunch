@@ -250,15 +250,6 @@ class Entity(elements.Document):
         return self
 
 
-class Dataset(Entity):
-    """
-    class for adding methods to the dataset entity
-    """
-
-    def my_method(self):
-        return "I'm a dataset method"
-
-
 class View(elements.Document):
 
     element = "shoji:view"
