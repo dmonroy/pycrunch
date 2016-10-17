@@ -1,4 +1,11 @@
+import re
+
 from pycrunch import elements
+
+VARIABLE_URL_REGEX = re.compile(
+    r"^(http|https):\/\/(.*)\/api\/datasets\/([\w\d]+)\/variables\/([\w\d]+)"
+    r"(\/subvariables\/([\w\d]*))?\/?$"
+)
 
 
 def cast(variable, type, format=None, offset=None, resolution=None):
@@ -16,3 +23,10 @@ def cast(variable, type, format=None, offset=None, resolution=None):
         payload['resolution'] = resolution
 
     return variable.cast.post(data=payload.json)
+
+
+def validate_variable_url(url):
+    """
+    Checks if a given url matches the variable url regex or not.
+    """
+    return VARIABLE_URL_REGEX.match(url)
