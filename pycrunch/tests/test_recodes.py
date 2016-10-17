@@ -4,7 +4,7 @@ from unittest import mock
 from pycrunch.recodes import validate_category_map
 from pycrunch.recodes import combine_categories
 from pycrunch.recodes import combine_responses
-
+from pycrunch.shoji import Entity
 
 CATEGORY_MAP = {
     1: {
@@ -89,7 +89,7 @@ class TestRecodes(TestCase):
         modified_map = validate_category_map(test_map)
         assert modified_map[0]['combined_ids'] == [1, 2, 3, 4]
 
-    def test_combine_categories(self):
+    def test_combine_categories_from_alias(self):
         ds = mock.MagicMock()
         var_url = 'http://test.crunch.io/api/datasets/123/variables/0001/'
         ds.entity.self = 'http://test.crunch.io/api/datasets/123/'
@@ -100,8 +100,37 @@ class TestRecodes(TestCase):
         }
         combine_categories(ds, 'test', CATEGORY_MAP, 'name', 'alias')
         call = ds.variables.create.call_args_list[0][0][0]
+
+        assert call == RECODES_PAYLOAD
+
+    def test_combine_categories_from_url(self):
+        ds = mock.MagicMock()
+        var_url = 'http://test.crunch.io/api/datasets/123/variables/0001/'
+        ds.entity.self = 'http://test.crunch.io/api/datasets/123/'
+        entity_mock = mock.MagicMock()
+        entity_mock.entity.self = var_url
+        ds.variables.by.return_value = {
+            'test': entity_mock
         }
-        assert call == recodes_payload
+        combine_categories(ds, var_url, CATEGORY_MAP, 'name', 'alias')
+        call = ds.variables.create.call_args_list[0][0][0]
+
+        assert call == RECODES_PAYLOAD
+
+    def test_combine_categories_from_entity(self):
+        ds = mock.MagicMock()
+        var_url = 'http://test.crunch.io/api/datasets/123/variables/0001/'
+        ds.entity.self = 'http://test.crunch.io/api/datasets/123/'
+        entity_mock = mock.MagicMock()
+        entity_mock.entity.self = var_url
+        ds.variables.by.return_value = {
+            'test': entity_mock
+        }
+        entity = Entity(mock.MagicMock(), self=var_url, body={})
+        combine_categories(ds, entity, CATEGORY_MAP, 'name', 'alias')
+        call = ds.variables.create.call_args_list[0][0][0]
+
+        assert call == RECODES_PAYLOAD
 
     def test_combine_responses(self):
         ds = mock.MagicMock()
