@@ -33,7 +33,8 @@ def var_name_to_url(ds, alias):
         return ds.variables.by('alias')[alias].entity.self
     except KeyError:
         raise KeyError(
-            "Variable %s does not exist in Dataset %s" % (alias, ds['body']['name']))
+            "Variable %s does not exist in Dataset %s" % (alias,
+                                                          ds['body']['name']))
 
 
 def aliases_to_urls(ds, variable, response_map):
@@ -51,7 +52,8 @@ def aliases_to_urls(ds, variable, response_map):
             mapped_urls[key] = [suvars[x].entity.self for x in values]
         except KeyError:
             raise KeyError(
-                "Unexistant variables %s in Dataset %s" % (values, ds['body']['alias']))
+                "Unexistant variables %s in Dataset %s" % (
+                    values, ds['body']['alias']))
     return mapped_urls
 
 
@@ -78,7 +80,8 @@ def validate_category_map(map):
 def validate_response_map(map):
     """
     :param map: responses keyed by new alias mapped to existing aliases
-    :return: a list of dictionaries describing the new responses to create for the variable
+    :return: a list of dictionaries describing the new responses to create for
+             the variable
     """
     rebuilt = list()
     for key, value in map.items():
@@ -105,7 +108,7 @@ class Dataset(Entity):
         """
         if isinstance(expr, six.string_types):
             expr_obj = parse_expr(expr)
-            expr_obj = process_expr(expr_obj, self)  # cause we need variable URLs
+            expr_obj = process_expr(expr_obj, self)  # cause we need URLs
         elif expr is None:
             expr_obj = {}
         else:
@@ -152,7 +155,8 @@ class Dataset(Entity):
 
         return self.variables.create(payload)
 
-    def combine_categories(self, from_alias, category_map, name, alias, description=''):
+    def combine_categories(self, from_alias, category_map,
+                           name, alias, description=''):
         """
         Create a new variable in the given dataset that is a recode
         of an existing variable
@@ -188,10 +192,13 @@ class Dataset(Entity):
         ]
         return self.variables.create(payload)
 
-    def combine_responses(self, from_alias, response_map, name, alias, description=''):
+    def combine_responses(self, from_alias, response_map,
+                          name, alias, description=''):
+
         """
-        Creates a new variable in the given dataset that combines existing responses
-        into new categorized ones
+        Creates a new variable in the given dataset that combines existing
+        responses into new categorized ones
+
         response_map = {
             new_subvar_name1:[old_subvar_alias1, old_subvar_alias2],
             new_subvar_name2: [old_subvar_alias3, old_subvar_alias4]
