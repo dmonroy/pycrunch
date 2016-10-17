@@ -119,7 +119,7 @@ class Dataset(Entity):
         )
 
     def create_categorical(self, categories, rules,
-                           name, alias, description=''):
+                           name, alias, description='', missing=True):
 
         """
         creates a categorical variable deriving from other variables
@@ -138,6 +138,14 @@ class Dataset(Entity):
                 'value': {
                     'class': 'categorical',
                     'categories': categories}}}]
+
+        if missing:
+            args[0]['column'].append(-1)
+            args[0]['type']['value']['categories'].append(dict(
+                id=-1,
+                name='No Data',
+                numeric_value=None,
+                missing=True))
 
         more_args = []
         for rule in rules:
