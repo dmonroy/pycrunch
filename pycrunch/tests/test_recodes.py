@@ -23,6 +23,39 @@ RESPONSE_MAP = {
     'newsubvar': ['sub1', 'sub2']
 }
 
+RECODES_PAYLOAD = {
+    "element": "shoji:entity",
+    "body": {
+        "name": "name",
+        "description": "",
+        "alias": "alias",
+        "expr": {
+            "function": "combine_categories",
+            "args": [
+                {
+                    "variable": 'http://test.crunch.io/api/datasets/123/variables/0001/'
+                },
+                {
+                    "value": [
+                        {
+                            "name": "China",
+                            "id": 1,
+                            "missing": False,
+                            "combined_ids": [2, 3]
+                        },
+                        {
+                            "name": "Other",
+                            "id": 2,
+                            "missing": False,
+                            "combined_ids": [1]
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
+
 
 class TestRecodes(TestCase):
 
@@ -67,37 +100,6 @@ class TestRecodes(TestCase):
         }
         combine_categories(ds, 'test', CATEGORY_MAP, 'name', 'alias')
         call = ds.variables.create.call_args_list[0][0][0]
-        recodes_payload = {
-            "element": "shoji:entity",
-            "body": {
-                "name": "name",
-                "description": "",
-                "alias": "alias",
-                "expr": {
-                    "function": "combine_categories",
-                    "args": [
-                        {
-                            "variable": 'http://test.crunch.io/api/datasets/123/variables/0001/'
-                        },
-                        {
-                            "value": [
-                                {
-                                    "name": "China",
-                                    "id": 1,
-                                    "missing": False,
-                                    "combined_ids": [2, 3]
-                                },
-                                {
-                                    "name": "Other",
-                                    "id": 2,
-                                    "missing": False,
-                                    "combined_ids": [1]
-                                }
-                            ]
-                        }
-                    ]
-                }
-            }
         }
         assert call == recodes_payload
 
