@@ -139,6 +139,9 @@ class Dataset(Entity):
                     'class': 'categorical',
                     'categories': categories}}}]
 
+        for cat in args[0]['type']['value']['categories']:
+            cat.setdefault('missing', False)
+
         if missing:
             args[0]['column'].append(-1)
             args[0]['type']['value']['categories'].append(dict(
