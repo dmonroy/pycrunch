@@ -614,7 +614,7 @@ def main():
         ]
 
         new_var = create_categorical(
-            ds=dataset,
+            dataset=dataset,
             categories=categories,
             rules=rules,
             name='Operating System Users',

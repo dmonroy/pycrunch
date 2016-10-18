@@ -35,7 +35,7 @@ At the moment *filter expressions* can be composed using the following logical e
 | operator | meaning               |
 |:--------:|-----------------------|
 | ==       | eqal                  |
-| !=       | unequal                |
+| !=       | unequal               |
 | >        | greater than          |
 | >=       | greater or eqal       |
 | <        | less than             |
@@ -86,7 +86,7 @@ category_recode = {
 
 new_var = combine_categories(
     dataset=my_dataset, 
-    from_alias='brandrating', 
+    variable='brandrating', 
     category_map=category_recode, 
     name='Brandrating 2', 
     alias='brandrating2', 
@@ -108,7 +108,7 @@ response_mappings = {
 
 new_var = combine_responses(
     dataset=my_dataset, 
-    from_alias='from_alias', 
+    variable='original_variable_alias', 
     response_map=response_mappings,
     name='Brandrating 3', 
     alias='brandrating3', 
