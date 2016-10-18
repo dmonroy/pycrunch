@@ -56,6 +56,34 @@ RECODES_PAYLOAD = {
     }
 }
 
+COMBINE_RESPONSES_PAYLOAD = {
+    'element': 'shoji:entity',
+    'body': {
+        'alias': 'alias',
+        'description': '',
+        'name': 'name',
+        'expr': {
+            'function': 'combine_responses',
+            'args': [
+                {
+                    'variable': 'http://test.crunch.io/api/datasets/123/variables/0001/'
+                },
+                {
+                    'value': [
+                        {
+                            'name': 'newsubvar',
+                            'combined_ids': [
+                                'http://test.crunch.io/api/datasets/123/variables/0001/subvariables/00001/',
+                                'http://test.crunch.io/api/datasets/123/variables/0001/subvariables/00002/'
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
+
 
 class TestRecodes(TestCase):
 
@@ -156,31 +184,5 @@ class TestRecodes(TestCase):
         # make the actual response call
         combine_responses(ds, 'test', RESPONSE_MAP, 'name', 'alias')
         call = ds.variables.create.call_args_list[0][0][0]
-        expected_payload = {
-            'element': 'shoji:entity',
-            'body': {
-                'alias': 'alias',
-                'description': '',
-                'name': 'name',
-                'expr': {
-                    'function': 'combine_responses',
-                    'args': [
-                        {
-                            'variable': 'http://test.crunch.io/api/datasets/123/variables/0001/'
-                        },
-                        {
-                            'value': [
-                                {
-                                    'name': 'newsubvar',
-                                    'combined_ids': [
-                                        'http://test.crunch.io/api/datasets/123/variables/0001/subvariables/00001/',
-                                        'http://test.crunch.io/api/datasets/123/variables/0001/subvariables/00002/'
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                }
-            }
-        }
-        assert call == expected_payload
+
+        assert call == COMBINE_RESPONSES_PAYLOAD
