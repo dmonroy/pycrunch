@@ -113,10 +113,9 @@ def combine_categories(dataset, variable, category_map, name, alias, description
     of an existing variable
     category_map = {
         1: {
-            "label": "Favorable",
+            "name": "Favorable",
             "missing": True,
-            "num_value": 1,
-            "ids": [1,2]
+            "combined_ids": [1,2]
         },
     }
     :param dataset: pycrunch session dataset

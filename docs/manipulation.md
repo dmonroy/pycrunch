@@ -65,22 +65,19 @@ from pycrunch.recodes import combine_categories
     
 category_recode = {
     1: {
-        'label': 'Favorable',
+        'name': 'Favorable',
         'missing': False,
-        'num_value': 1,
-        'ids': [1, 2]
+        'combined_ids': [1, 2]
     },
     2: {
-        'label': 'Neutral',
+        'name': 'Neutral',
         'missing': False,
-        'num_value': 2,
-        'ids': [3]
+        'combined_ids': [3]
     },
     3: {
-        'label': 'Unfavorable',
+        'name': 'Unfavorable',
         'missing': False,
-        'num_value': 3,
-        'ids': [4, 5]
+        'combined_ids': [4, 5]
     }
 }
 
