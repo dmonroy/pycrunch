@@ -161,7 +161,7 @@ class TestRecodes(TestCase):
 
         assert call == RECODES_PAYLOAD
 
-    def test_combine_responses(self):
+    def test_combine_responses_by_alias(self):
         ds = mock.MagicMock()
         var_url = 'http://test.crunch.io/api/datasets/123/variables/0001/'
         subvar1_url = 'http://test.crunch.io/api/datasets/123/variables/0001/subvariables/00001/'
@@ -195,6 +195,88 @@ class TestRecodes(TestCase):
 
         # make the actual response call
         combine_responses(ds, 'test', RESPONSE_MAP, 'name', 'alias')
+        call = ds.variables.create.call_args_list[0][0][0]
+
+        assert call == COMBINE_RESPONSES_PAYLOAD
+
+    def test_combine_responses_by_url(self):
+        ds = mock.MagicMock()
+        var_url = 'http://test.crunch.io/api/datasets/123/variables/0001/'
+        subvar1_url = 'http://test.crunch.io/api/datasets/123/variables/0001/subvariables/00001/'
+        subvar2_url = 'http://test.crunch.io/api/datasets/123/variables/0001/subvariables/00002/'
+        ds.entity.self = 'http://test.crunch.io/api/datasets/123/'
+
+        # mock subvariables
+        subvar_mock = mock.MagicMock()
+        subvar_mock.entity.self = subvar1_url
+        subvar2_mock = mock.MagicMock()
+        subvar2_mock.entity.self = subvar2_url
+
+        # mock parent variable
+        entity_mock = mock.MagicMock()
+        entity_mock.entity.self = var_url
+
+        # add dictionaries return to by functions
+        entity_mock.entity.subvariables.by.return_value = {
+            'sub1': subvar_mock,
+            'sub2': subvar2_mock
+        }
+
+        ds.variables.by.return_value = {
+            'test': entity_mock
+        }
+
+        # mock response from ds.session.get(variable_url)
+        var_response = mock.MagicMock()
+        var_response.payload = entity_mock.entity
+        ds.session.get.return_value = var_response
+
+        # make the actual response call
+        combine_responses(ds, var_url, RESPONSE_MAP, 'name', 'alias')
+        call = ds.variables.create.call_args_list[0][0][0]
+
+        assert call == COMBINE_RESPONSES_PAYLOAD
+
+    def test_combine_responses_by_entity(self):
+        ds = mock.MagicMock()
+        var_url = 'http://test.crunch.io/api/datasets/123/variables/0001/'
+        subvar1_url = 'http://test.crunch.io/api/datasets/123/variables/0001/subvariables/00001/'
+        subvar2_url = 'http://test.crunch.io/api/datasets/123/variables/0001/subvariables/00002/'
+        ds.entity.self = 'http://test.crunch.io/api/datasets/123/'
+
+        # mock subvariables
+        subvar_mock = mock.MagicMock()
+        subvar_mock.entity.self = subvar1_url
+        subvar2_mock = mock.MagicMock()
+        subvar2_mock.entity.self = subvar2_url
+
+        # mock parent variable
+        entity_mock = mock.MagicMock()
+        entity_mock.entity.self = var_url
+
+        # add dictionaries return to by functions
+        entity_mock.entity.subvariables.by.return_value = {
+            'sub1': subvar_mock,
+            'sub2': subvar2_mock
+        }
+
+        ds.variables.by.return_value = {
+            'test': entity_mock
+        }
+
+        # mock response from ds.session.get(variable_url)
+        var_response = mock.MagicMock()
+        var_response.payload = entity_mock.entity
+        ds.session.get.return_value = var_response
+
+        entity = Entity(
+            mock.MagicMock(),
+            self=var_url,
+            body={}
+        )
+
+        # make the actual response call
+        combine_responses(ds, entity, RESPONSE_MAP, 'name', 'alias')
         call = ds.variables.create.call_args_list[0][0][0]
 
         assert call == COMBINE_RESPONSES_PAYLOAD
