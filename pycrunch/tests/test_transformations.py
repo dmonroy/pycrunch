@@ -1,7 +1,8 @@
 from unittest import TestCase
 from unittest import mock
 
-from pycrunch.transformations import create_categorical
+import pycrunch
+from pycrunch.datasets import Dataset
 
 
 categories = [
@@ -16,7 +17,7 @@ class TestCreateCategorical(TestCase):
 
     ds_url = 'http://test.crunch.io/api/datasets/123/'
 
-    def test_create_categorical(self):
+    def test_create_categorical_with_missing(self):
         var_id = '0001'
         var_type = 'categorical'
         var_url = '%svariables/%s/' % (self.ds_url, var_id)
@@ -30,6 +31,7 @@ class TestCreateCategorical(TestCase):
             return args[0]
 
         ds = mock.MagicMock()
+        ds.create_categorical = Dataset.create_categorical
         ds.self = self.ds_url
         _var_mock = mock.MagicMock()
         _var_mock.entity.self = var_url
@@ -39,13 +41,11 @@ class TestCreateCategorical(TestCase):
             'gender': _var_mock
         }
 
-        test = create_categorical(ds, categories, rules, 'name', 'alias', 'description')
+        ds.create_categorical(ds, categories, rules, 'name', 'alias', 'description')
         call = ds.variables.create.call_args_list[0][0][0]
         payload = {
+          "element": "shoji:entity",
           "body": {
-            "name": "name",
-            "alias": "alias",
-            "description": "description",
             "expr": {
               "function": "case",
               "args": [
@@ -53,31 +53,38 @@ class TestCreateCategorical(TestCase):
                   "column": [
                     3,
                     1,
-                    2
+                    2,
+                    -1
                   ],
                   "type": {
                     "value": {
+                      "class": "categorical",
                       "categories": [
                         {
-                          "name": "Hipsters",
                           "id": 3,
                           "numeric_value": None,
-                          "missing": False
+                          "missing": False,
+                          "name": "Hipsters"
                         },
                         {
-                          "name": "Techies",
                           "id": 1,
                           "numeric_value": None,
-                          "missing": False
+                          "missing": False,
+                          "name": "Techies"
                         },
                         {
-                          "name": "Yuppies",
                           "id": 2,
                           "numeric_value": None,
-                          "missing": False
+                          "missing": False,
+                          "name": "Yuppies"
+                        },
+                        {
+                          "name": "No Data",
+                          "numeric_value": None,
+                          "missing": True,
+                          "id": -1
                         }
-                      ],
-                      "class": "categorical"
+                      ]
                     }
                   }
                 },
@@ -104,8 +111,10 @@ class TestCreateCategorical(TestCase):
                   ]
                 }
               ]
-            }
-          },
-          "element": "shoji:entity"
+            },
+            "description": "description",
+            "name": "name",
+            "alias": "alias"
+          }
         }
         assert call == payload

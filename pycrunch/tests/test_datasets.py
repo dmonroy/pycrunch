@@ -3,7 +3,8 @@ import json
 from unittest import TestCase
 from unittest import mock
 
-from pycrunch.datasets import exclusion
+import pycrunch
+from pycrunch.datasets import Dataset
 
 
 class TestExclusionFilters(TestCase):
@@ -30,6 +31,7 @@ class TestExclusionFilters(TestCase):
         ds = mock.MagicMock()
         ds.fragments.exclusion = '%sexclusion/' % self.ds_url
         ds.self = self.ds_url
+        ds.exclusion = Dataset.exclusion
         _var_mock = mock.MagicMock()
         _var_mock.entity.self = var_url
         _var_mock.__getitem__.side_effect = _get
@@ -40,7 +42,7 @@ class TestExclusionFilters(TestCase):
 
         # Action!
         exclusion_filter = 'disposition != 0'
-        exclusion(ds, exclusion_filter)
+        ds.exclusion(ds, exclusion_filter)
 
         # Ensure .patch was called the right way.
         assert len(ds.session.patch.call_args_list) == 1
@@ -66,8 +68,8 @@ class TestExclusionFilters(TestCase):
         """
         ds = mock.MagicMock()
         ds.fragments.exclusion = '%sexclusion/' % self.ds_url
-
-        exclusion(ds)
+        ds.exclusion = Dataset.exclusion
+        ds.exclusion(ds)
 
         ds.session.patch.assert_called_once_with(
             ds.fragments.exclusion,
