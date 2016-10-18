@@ -1,3 +1,4 @@
+import json
 from unittest import TestCase
 from unittest import mock
 
@@ -166,21 +167,32 @@ class TestRecodes(TestCase):
         subvar1_url = 'http://test.crunch.io/api/datasets/123/variables/0001/subvariables/00001/'
         subvar2_url = 'http://test.crunch.io/api/datasets/123/variables/0001/subvariables/00002/'
         ds.entity.self = 'http://test.crunch.io/api/datasets/123/'
-        entity_mock = mock.MagicMock()
-        entity_mock.entity.self = var_url
+
         # mock subvariables
         subvar_mock = mock.MagicMock()
         subvar_mock.entity.self = subvar1_url
         subvar2_mock = mock.MagicMock()
         subvar2_mock.entity.self = subvar2_url
-        # add dictionaries return to by function
+
+        # mock parent variable
+        entity_mock = mock.MagicMock()
+        entity_mock.entity.self = var_url
+
+        # add dictionaries return to by functions
         entity_mock.entity.subvariables.by.return_value = {
             'sub1': subvar_mock,
             'sub2': subvar2_mock
         }
+
         ds.variables.by.return_value = {
             'test': entity_mock
         }
+
+        # mock response from ds.session.get(variable_url)
+        var_response = mock.MagicMock()
+        var_response.payload = entity_mock.entity
+        ds.session.get.return_value = var_response
+
         # make the actual response call
         combine_responses(ds, 'test', RESPONSE_MAP, 'name', 'alias')
         call = ds.variables.create.call_args_list[0][0][0]
