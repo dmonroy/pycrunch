@@ -2,7 +2,7 @@ Dataset Manipulation
 ====================
 
 This document describes and gives examples of how
-to manipulate the data on datasets
+to manipulate the data on datasets.
 
 
 ## Drop Rules
@@ -17,7 +17,7 @@ For example, suppose `Omnibus` is the name of a crunch dataset
 (assigned to the Python object `ds` ) and `disposition` is the alias of a variable in this dataset:
 
 ```python
-exclusion(my_dataset, "disposition != 0")
+my_dataset.exclusion("disposition != 0")
 ```
 
 (Here, zero is the id (or code) assigned to completed interviews.)
@@ -25,7 +25,7 @@ exclusion(my_dataset, "disposition != 0")
 We can also exclude a list of ids using:
 
 ```python
-exclusion(my_dataset, "disposition in [0, 1]")
+my_dataset.exclusion("disposition in [0, 1]")
 ```
 
 #### Filter expressions
@@ -34,12 +34,12 @@ At the moment *filter expressions* can be composed using the following logical e
 
 | operator | meaning               |
 |:--------:|-----------------------|
-| ==       | eqal                  |
+| ==       | equal                 |
 | !=       | unequal               |
 | >        | greater than          |
-| >=       | greater or eqal       |
+| >=       | greater or equal      |
 | <        | less than             |
-| <=       | less or qual          |
+| <=       | less or equal         |
 | and      | logical *and*         |
 | or       | logical *or*          |
 | in       | in *list/tuple*       |
@@ -61,8 +61,6 @@ For example, if brandrating is a variable with categories:
 With codes 1,2,3,4,5,9 respectively), we may want to create a new variable brandrating2 using the following:
 
 ```python
-from pycrunch.recodes import combine_categories
-    
 category_recode = {
     1: {
         'name': 'Favorable',
@@ -81,8 +79,7 @@ category_recode = {
     }
 }
 
-new_var = combine_categories(
-    dataset=my_dataset, 
+new_var = my_dataset.combine_categories(
     variable='brandrating', 
     category_map=category_recode, 
     name='Brandrating 2', 
@@ -96,15 +93,12 @@ For a variable with subvariables (like multiple choice questions) you may want t
 new variable with combined subvariables.
 
 ```python
-from pycrunch.recodes import combine_responses
-
 response_mappings = {
     'new_subvar_alias1': ['from_subvar_alias1', 'from_subvar_alias2'],
     'new_subvar_alias2': ['from_subvar_alias3', 'from_subvar_alias4']
 }
 
-new_var = combine_responses(
-    dataset=my_dataset, 
+new_var = my_dataset.combine_responses(
     variable='original_variable_alias', 
     response_map=response_mappings,
     name='Brandrating 3', 
@@ -112,15 +106,13 @@ new_var = combine_responses(
     description='Combining responses for brandrating')
 ```
 
-## Tranformations
+## Transformations
 
 #### Creating a categorical variable
 
 Transformations create new variables based upon the values of one or more input variables. 
 
 ```python
-from pycrunch.transformations import create_categorical
-
 categories = [
     {"id": 1, "name": "Hipsters", "numeric_value": None, "missing": False},
     {"id": 2, "name": "Techies", "numeric_value": None, "missing": False},
@@ -129,8 +121,7 @@ categories = [
 
 rules = ['var1 == 1 and var2 == 1', 'var1 == 2 and var2 == 2']
 
-new_var = create_categorical(
-    dataset=my_dataset,
+new_var = my_dataset.create_categorical(
     categories=categories,
     rules=rules,
     name='New variable',

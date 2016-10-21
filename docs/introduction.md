@@ -1,8 +1,7 @@
 Introduction
 ============
 
-The following document describes the different methods to interact with Crunch 
-and it's Datasets in a Pythonic way.
+The following document describes the basic usage of the pycrunch library.
 
 Getting started
 ---------------
@@ -13,4 +12,3 @@ Start a simple Crunch session:
 import pycrunch
 site = pycrunch.connect("me@mycompany.com", "yourpassword", "https://app.crunch.io/api/")
 ```
-

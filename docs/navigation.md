@@ -1,11 +1,12 @@
-Pycrunch navigation
-====================
+Navigating the Crunch.io API with pycrunch
+==========================================
 
 This document intends to describe how to move around the different
-elements and structures that Crunch exposes
+elements and structures that the Crunch.io API exposes.
 
-We are going to use the `site` session variable previously described.
-That will be our intermediary between Python and Crunch.
+We are going to use the `site` session object previously described in the
+Introduction section. It will be our intermediary between Python and
+Crunch.io.
 
 
 Catalogs
@@ -19,7 +20,7 @@ site.datasets
 ```
 
 Catalogs provide some methods to handle individual elements. Let's
-say we want to interact with the Dataset named "US Elections 2016" we
+say we want to interact with the Dataset named "US Elections 2016", we
 could reference that particular Dataset by doing:
 
 ```python
@@ -28,7 +29,7 @@ my_dataset = site.datsets.by('name').get("US Elections 2016").entity
 
 Now the variable `my_datasets` holds a reference to the Dataset
 we need to interact with. Just like we interacted with the datasets
-Catalog, we can do it with a given Dataset variables:
+Catalog, we can interact with the Dataset variables Catalog as well:
 
 ```python
 my_dataset.variables
@@ -41,17 +42,10 @@ we can make use of the table entity:
 my_dataset.table.data
 ```
 
-Pycrunch also allows us to interact with data using Pandas. For
-this we need to know the identifier of the dataset we are interacting
-with. We can easily get it by doing:
+Pycrunch also allows us to interact with data using Pandas. To access the
+Pandas Dataframe of our dataset object, we would do the following:
 
 ```python
-dataset_id = my_dataset.id
-```
-
-To access a Pandas Dataframe of the data:
-
-```python
-from pycrunch import pandaslib as crunchpandas
-df = crunchpandas.dataframe_from_dataset(site, dataset_id)
+from pycrunch import pandaslib
+df = pandaslib.dataframe(my_dataset)
 ```
