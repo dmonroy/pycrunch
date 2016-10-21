@@ -31,6 +31,7 @@ class TestCreateCategorical(TestCase):
             return args[0]
 
         ds = mock.MagicMock()
+        ds.__class__ = Dataset
         ds.create_categorical = Dataset.create_categorical
         ds.self = self.ds_url
         _var_mock = mock.MagicMock()

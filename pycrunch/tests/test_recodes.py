@@ -122,6 +122,7 @@ class TestRecodes(TestCase):
 
     def test_combine_categories_from_alias(self):
         ds = mock.MagicMock()
+        ds.__class__ = Dataset
         ds.combine_categories = Dataset.combine_categories
         var_url = 'http://test.crunch.io/api/datasets/123/variables/0001/'
         ds.entity.self = 'http://test.crunch.io/api/datasets/123/'
@@ -137,6 +138,7 @@ class TestRecodes(TestCase):
 
     def test_combine_categories_from_url(self):
         ds = mock.MagicMock()
+        ds.__class__ = Dataset
         ds.combine_categories = Dataset.combine_categories
         var_url = 'http://test.crunch.io/api/datasets/123/variables/0001/'
         ds.entity.self = 'http://test.crunch.io/api/datasets/123/'
@@ -152,6 +154,7 @@ class TestRecodes(TestCase):
 
     def test_combine_categories_from_entity(self):
         ds = mock.MagicMock()
+        ds.__class__ = Dataset
         ds.combine_categories = Dataset.combine_categories
         var_url = 'http://test.crunch.io/api/datasets/123/variables/0001/'
         ds.entity.self = 'http://test.crunch.io/api/datasets/123/'
@@ -168,6 +171,7 @@ class TestRecodes(TestCase):
 
     def test_combine_responses_by_alias(self):
         ds = mock.MagicMock()
+        ds.__class__ = Dataset
         ds.combine_responses = Dataset.combine_responses
         var_url = 'http://test.crunch.io/api/datasets/123/variables/0001/'
         subvar1_url = 'http://test.crunch.io/api/datasets/123/variables/0001/subvariables/00001/'
@@ -207,6 +211,7 @@ class TestRecodes(TestCase):
 
     def test_combine_responses_by_url(self):
         ds = mock.MagicMock()
+        ds.__class__ = Dataset
         ds.combine_responses = Dataset.combine_responses
         var_url = 'http://test.crunch.io/api/datasets/123/variables/0001/'
         subvar1_url = 'http://test.crunch.io/api/datasets/123/variables/0001/subvariables/00001/'
@@ -246,6 +251,7 @@ class TestRecodes(TestCase):
 
     def test_combine_responses_by_entity(self):
         ds = mock.MagicMock()
+        ds.__class__ = Dataset
         ds.combine_responses = Dataset.combine_responses
         var_url = 'http://test.crunch.io/api/datasets/123/variables/0001/'
         subvar1_url = 'http://test.crunch.io/api/datasets/123/variables/0001/subvariables/00001/'

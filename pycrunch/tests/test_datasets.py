@@ -31,6 +31,7 @@ class TestExclusionFilters(TestCase):
         ds = mock.MagicMock()
         ds.fragments.exclusion = '%sexclusion/' % self.ds_url
         ds.self = self.ds_url
+        ds.__class__ = Dataset
         ds.exclusion = Dataset.exclusion
         _var_mock = mock.MagicMock()
         _var_mock.entity.self = var_url
@@ -68,6 +69,7 @@ class TestExclusionFilters(TestCase):
         """
         ds = mock.MagicMock()
         ds.fragments.exclusion = '%sexclusion/' % self.ds_url
+        ds.__class__ = Dataset
         ds.exclusion = Dataset.exclusion
         ds.exclusion(ds)
 
