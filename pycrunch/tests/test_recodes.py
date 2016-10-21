@@ -1,8 +1,6 @@
-import json
 from unittest import TestCase
 from unittest import mock
 
-import pycrunch
 from pycrunch.datasets import Dataset
 from pycrunch.datasets import validate_category_map
 
