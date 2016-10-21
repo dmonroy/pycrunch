@@ -11,6 +11,7 @@ from six.moves import urllib
 
 import six
 
+import pycrunch
 from pycrunch import elements
 from pycrunch.lemonpy import URL, ClientError, ServerError
 
@@ -116,10 +117,15 @@ class Catalog(elements.Document):
 
         An entity is returned.
         """
+        _cls = Entity
+        if 'self' in self and self['self'].endswith('/api/datasets/'):
+            # A Dataset is being created.
+            _cls = pycrunch.datasets.Dataset
+
         if entity is None:
-            entity = Entity(self.session)
+            entity = _cls(self.session)
         elif isinstance(entity, dict) and not isinstance(entity, Entity):
-            entity = Entity(self.session, **entity)
+            entity = _cls(self.session, **entity)
         return self._wait_for_progress(entity, self.post(data=entity.json), progress_tracker)
 
     def by(self, attr):
