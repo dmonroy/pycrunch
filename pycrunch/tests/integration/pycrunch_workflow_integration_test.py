@@ -5,10 +5,6 @@ import os
 
 import pycrunch
 from pycrunch import pandaslib
-from pycrunch.transformations import create_categorical
-from pycrunch.recodes import combine_categories
-from pycrunch.recodes import combine_responses
-
 
 CRUNCH_URL = os.environ.get('CRUNCH_TEST_URL')
 CRUNCH_USER = os.environ.get('CRUNCH_TEST_USER')
@@ -293,7 +289,7 @@ def main():
 
         # 1.1 Set a simple exclusion filter.
 
-        pycrunch.datasets.exclusion(dataset, 'identity > 5')
+        dataset.exclusion('identity > 5')
         df = pandaslib.dataframe(dataset)
         assert len(df) == 5
         assert not any(r['identity'] > 5 for _, r in df.iterrows())
@@ -301,7 +297,7 @@ def main():
         # 1.2 More complex exclusion filters involving a categorical variable.
 
         expr = 'speak_spanish in [32766]'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -312,7 +308,7 @@ def main():
             assert row['identity'] in valid_ids
 
         expr = 'speak_spanish in (32766, 32767)'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -324,7 +320,7 @@ def main():
             assert not isnan(row['speak_spanish'])
 
         expr = 'not (speak_spanish in (1, 2) and operating_system == "Linux")'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -341,7 +337,7 @@ def main():
         # 1.3 Exclusion filters with `has_any`.
 
         expr = 'hobbies.has_any([32766])'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -353,7 +349,7 @@ def main():
             assert {'?': 32766} not in row['hobbies']
 
         expr = 'not hobbies.has_any([32766])'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -365,7 +361,7 @@ def main():
             assert {'?': 32766} in row['hobbies']
 
         expr = 'hobbies.has_any([32766, 32767])'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -379,7 +375,7 @@ def main():
                    {'?': 32767} not in row['hobbies']
 
         expr = 'music.has_any([32766])'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -391,7 +387,7 @@ def main():
             assert {'?': 32766} not in row['music']
 
         expr = 'music.has_any([1])'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -403,7 +399,7 @@ def main():
             assert 1 not in row['music']
 
         expr = 'music.has_any([1, 2])'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -418,7 +414,7 @@ def main():
         # 1.4 Exclusion filters with `has_all`.
 
         expr = 'hobbies.has_all([32767])'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -431,7 +427,7 @@ def main():
                                       {'?': 32767}, {'?': 32767}]
 
         expr = 'not hobbies.has_all([32767])'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -444,7 +440,7 @@ def main():
                                       {'?': 32767}, {'?': 32767}]
 
         expr = 'music.has_all([1])'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -456,7 +452,7 @@ def main():
             assert row['music'] != [1, 1, 1, 1, 1]
 
         expr = 'music.has_all([1]) or music.has_all([2])'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -470,7 +466,7 @@ def main():
                    row['music'] != [2, 2, 2, 2, 2]
 
         expr = 'not ( music.has_all([1]) or music.has_all([2]) )'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -486,7 +482,7 @@ def main():
         # 1.5 Exclusion filters with `duplicates`.
 
         expr = 'ip_address.duplicates()'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         seen_ip_addresses = []
         for _, row in df.iterrows():
@@ -496,7 +492,7 @@ def main():
         # 1.6 Exclusion filters with `valid` and `missing`.
 
         expr = 'valid(speak_spanish)'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -508,7 +504,7 @@ def main():
             assert isnan(row['speak_spanish'])
 
         expr = 'not valid(speak_spanish)'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -520,7 +516,7 @@ def main():
             assert not isnan(row['speak_spanish'])
 
         expr = 'missing(speak_spanish)'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -532,7 +528,7 @@ def main():
             assert not isnan(row['speak_spanish'])
 
         expr = 'missing(hobbies)'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -549,7 +545,7 @@ def main():
                                          {'?': 32767}, {'?': 32767}]
 
         expr = 'not missing(hobbies)'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -566,7 +562,7 @@ def main():
                                          {'?': 32767}, {'?': 32767}]
 
         expr = 'valid(hobbies)'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -579,7 +575,7 @@ def main():
                    {'?': 32767} in row['hobbies']
 
         expr = 'not valid(hobbies)'
-        pycrunch.datasets.exclusion(dataset, expr)
+        dataset.exclusion(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -593,7 +589,7 @@ def main():
                    {'?': 32767} not in row['hobbies']
 
         # 1.7 Clear the exclusion filter.
-        pycrunch.datasets.exclusion(dataset)
+        dataset.exclusion()
         df = pandaslib.dataframe(dataset)
         assert len(df) == len(ROWS) - 1  # excluding the header
 
@@ -613,8 +609,7 @@ def main():
             'missing(operating_system)'
         ]
 
-        new_var = create_categorical(
-            dataset=dataset,
+        new_var = dataset.create_categorical(
             categories=categories,
             rules=rules,
             name='Operating System Users',
@@ -669,8 +664,8 @@ def main():
                 'combined_ids': [32766, 32767]
             }
         }
-        new_var = combine_categories(
-            dataset, 'speak_spanish', cat_map, 'Bilingual Person', 'bilingual'
+        new_var = dataset.combine_categories(
+            'speak_spanish', cat_map, 'Bilingual Person', 'bilingual'
         )
         assert isinstance(new_var, pycrunch.shoji.Entity)
         new_var.refresh()
@@ -725,8 +720,8 @@ def main():
                 'combined_ids': [32766, 32767]
             }
         }
-        new_var = combine_categories(
-            dataset, 'hobbies', cat_map, 'Hobbies (recoded)', 'hobbies_recoded'
+        new_var = dataset.combine_categories(
+            'hobbies', cat_map, 'Hobbies (recoded)', 'hobbies_recoded'
         )
         assert isinstance(new_var, pycrunch.shoji.Entity)
         new_var.refresh()
@@ -756,8 +751,8 @@ def main():
             'music_recoded_2': ['music_97'],
             'music_recoded_3': ['music_98', 'music_99']
         }
-        new_var = combine_responses(
-            dataset, 'music', response_map, 'Music (alt)', 'music_recoded'
+        new_var = dataset.combine_responses(
+            'music', response_map, 'Music (alt)', 'music_recoded'
         )
         assert isinstance(new_var, pycrunch.shoji.Entity)
         new_var.refresh()

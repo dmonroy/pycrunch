@@ -1,14 +1,12 @@
 import json
 import six
 
-from .shoji import Entity
-
 from pycrunch.expressions import parse_expr
 from pycrunch.expressions import process_expr
+from pycrunch.shoji import Entity
+from pycrunch.variables import validate_variable_url
 
 
-REQUIRED_VALUES = {"name", "id", "missing", "combined_ids"}
-REQUIRES_RESPONSES = {"combined_ids", "name"}
 SKELETON = {
     "element": "shoji:entity",
     "body": {
@@ -21,6 +19,9 @@ SKELETON = {
         }
     }
 }
+
+REQUIRED_VALUES = {"name", "id", "missing", "combined_ids"}
+REQUIRES_RESPONSES = {"combined_ids", "name"}
 
 
 def var_name_to_url(ds, alias):
@@ -37,15 +38,35 @@ def var_name_to_url(ds, alias):
                                                           ds['body']['name']))
 
 
-def aliases_to_urls(ds, variable, response_map):
+def variable_to_url(ds, variable):
+    """Receive an valid variable reference and return the variable url.
+
+    :param ds: The crunch dataset
+    :param variable: A valid variable reference in the form of a shoji Entity
+                     of the variable or a string containing the variable url
+                     or alias.
+    :return: The variable url
+    """
+    assert isinstance(variable, (six.string_types, Entity))
+
+    if isinstance(variable, Entity):
+        return variable.self
+
+    elif validate_variable_url(variable):
+        return variable
+    else:
+        return var_name_to_url(ds, variable)
+
+
+def aliases_to_urls(ds, variable_url, response_map):
     """
     Maps subvariable aliases to urls
     :param ds: /Users/mbc/Yougov/Crunch/pycrunch/pycrunch/recodes.py
-    :param variable: variable alias we want to inspect
+    :param variable_url: url of the variable we want to inspect
     :param response_map: mapping of new subvariables
     :return:
     """
-    suvars = ds.variables.by('alias')[variable].entity.subvariables.by('alias')
+    suvars = ds.session.get(variable_url).payload.subvariables.by('alias')
     mapped_urls = {}
     for key, values in response_map.items():
         try:
@@ -166,27 +187,26 @@ class Dataset(Entity):
 
         return self.variables.create(payload)
 
-    def combine_categories(self, from_alias, category_map,
+    def combine_categories(self, variable, category_map,
                            name, alias, description=''):
         """
         Create a new variable in the given dataset that is a recode
         of an existing variable
         category_map = {
             1: {
-                "label": "Favorable",
+                "name": "Favorable",
                 "missing": True,
-                "num_value": 1,
-                "ids": [1,2]
+                "combined_ids": [1,2]
             },
         }
         :param dataset: pycrunch session dataset
-        :param from_alias: alias of the variable to recode
+        :param variable: alias of the variable to recode
         :param name: name for the new variable
         :param alias: alias for the new variable
         :param description: description for the new variable
         :return: the new created variable
         """
-        variable_url = var_name_to_url(self, from_alias)
+        variable_url = variable_to_url(self, variable)
         categories = validate_category_map(category_map)
         payload = SKELETON.copy()
         payload['body']['name'] = name
@@ -203,7 +223,7 @@ class Dataset(Entity):
         ]
         return self.variables.create(payload)
 
-    def combine_responses(self, from_alias, response_map,
+    def combine_responses(self, variable, response_map,
                           name, alias, description=''):
 
         """
@@ -216,8 +236,8 @@ class Dataset(Entity):
         }
         :return: newly created variable
         """
-        variable_url = var_name_to_url(self, from_alias)
-        trans_responses = aliases_to_urls(self, from_alias, response_map)
+        variable_url = variable_to_url(self, variable)
+        trans_responses = aliases_to_urls(self, variable_url, response_map)
         responses = validate_response_map(trans_responses)
         payload = SKELETON.copy()
         payload['body']['name'] = name
