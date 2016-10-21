@@ -296,7 +296,7 @@ def process_expr(obj, ds):
                     if var['type'] in ('categorical_array', 'multiple_response'):
                         subvariables = var.get('subvariables', [])
                 else:
-                    raise ValueError("Invalid variable alias '%s" % val)
+                    raise ValueError("Invalid variable alias '%s'" % val)
             elif key == 'function':
                 op = val
 

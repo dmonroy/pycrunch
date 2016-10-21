@@ -35,7 +35,7 @@ At the moment *filter expressions* can be composed using the following logical e
 | operator | meaning               |
 |:--------:|-----------------------|
 | ==       | eqal                  |
-| !=       | unequal                |
+| !=       | unequal               |
 | >        | greater than          |
 | >=       | greater or eqal       |
 | <        | less than             |
@@ -65,28 +65,25 @@ from pycrunch.recodes import combine_categories
     
 category_recode = {
     1: {
-        'label': 'Favorable',
+        'name': 'Favorable',
         'missing': False,
-        'num_value': 1,
-        'ids': [1, 2]
+        'combined_ids': [1, 2]
     },
     2: {
-        'label': 'Neutral',
+        'name': 'Neutral',
         'missing': False,
-        'num_value': 2,
-        'ids': [3]
+        'combined_ids': [3]
     },
     3: {
-        'label': 'Unfavorable',
+        'name': 'Unfavorable',
         'missing': False,
-        'num_value': 3,
-        'ids': [4, 5]
+        'combined_ids': [4, 5]
     }
 }
 
 new_var = combine_categories(
     dataset=my_dataset, 
-    from_alias='brandrating', 
+    variable='brandrating', 
     category_map=category_recode, 
     name='Brandrating 2', 
     alias='brandrating2', 
@@ -108,7 +105,7 @@ response_mappings = {
 
 new_var = combine_responses(
     dataset=my_dataset, 
-    from_alias='from_alias', 
+    variable='original_variable_alias', 
     response_map=response_mappings,
     name='Brandrating 3', 
     alias='brandrating3', 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import math
 import os
 
 import pycrunch
@@ -263,6 +264,12 @@ def invalid_credentials():
     )
 
 
+def isnan(obj):
+    if not isinstance(obj, float):
+        return False
+    return math.isnan(obj)
+
+
 def main():
     assert not invalid_credentials()
 
@@ -289,126 +296,301 @@ def main():
         pycrunch.datasets.exclusion(dataset, 'identity > 5')
         df = pandaslib.dataframe(dataset)
         assert len(df) == 5
+        assert not any(r['identity'] > 5 for _, r in df.iterrows())
 
         # 1.2 More complex exclusion filters involving a categorical variable.
 
         expr = 'speak_spanish in [32766]'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 10
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity' and row[4] != 32766
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
 
         expr = 'speak_spanish in (32766, 32767)'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 9
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity' and row[4] not in (32766, 32767)
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert not isnan(row['speak_spanish'])
 
         expr = 'not (speak_spanish in (1, 2) and operating_system == "Linux")'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 2
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity' and row[4] in (1, 2) and row[2] == 'Linux'
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert row['speak_spanish'] in \
+                   ('I speak Spanish primarily',
+                    'I speak both Spanish and English equally')
+            assert row['operating_system'] == 'Linux'
 
         # 1.3 Exclusion filters with `has_any`.
 
         expr = 'hobbies.has_any([32766])'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 8
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity' and 32766 not in row[5:9]
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert {'?': 32766} not in row['hobbies']
 
         expr = 'not hobbies.has_any([32766])'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 4
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity' and 32766 in row[5:9]
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert {'?': 32766} in row['hobbies']
 
         expr = 'hobbies.has_any([32766, 32767])'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 7
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity'
+            and 32766 not in row[5:9] and 32767 not in row[5:9]
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert {'?': 32766} not in row['hobbies'] and \
+                   {'?': 32767} not in row['hobbies']
 
         expr = 'music.has_any([32766])'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 12
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity' and 32766 not in row[9:14]
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert {'?': 32766} not in row['music']
 
         expr = 'music.has_any([1])'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 1
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity' and 1 not in row[9:14]
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert 1 not in row['music']
 
         expr = 'music.has_any([1, 2])'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 0
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity'
+            and 1 not in row[9:14] and 2 not in row[9:14]
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert 1 not in row['music'] and 2 not in row['music']
 
         # 1.4 Exclusion filters with `has_all`.
 
         expr = 'hobbies.has_all([32767])'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 11
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity' and row[5:9] != [32767, 32767, 32767, 32767]
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert row['hobbies'] != [{'?': 32767}, {'?': 32767},
+                                      {'?': 32767}, {'?': 32767}]
 
         expr = 'not hobbies.has_all([32767])'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 1
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity' and row[5:9] == [32767, 32767, 32767, 32767]
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert row['hobbies'] == [{'?': 32767}, {'?': 32767},
+                                      {'?': 32767}, {'?': 32767}]
 
         expr = 'music.has_all([1])'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 11
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity' and row[9:14] != [1, 1, 1, 1, 1]
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert row['music'] != [1, 1, 1, 1, 1]
 
         expr = 'music.has_all([1]) or music.has_all([2])'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 10
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity'
+            and (row[9:14] != [1, 1, 1, 1, 1] and row[9:14] != [2, 2, 2, 2, 2])
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert row['music'] != [1, 1, 1, 1, 1] and \
+                   row['music'] != [2, 2, 2, 2, 2]
 
         expr = 'not ( music.has_all([1]) or music.has_all([2]) )'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 2
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity'
+            and (row[9:14] == [1, 1, 1, 1, 1] or row[9:14] == [2, 2, 2, 2, 2])
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert row['music'] == [1, 1, 1, 1, 1] or \
+                   row['music'] == [2, 2, 2, 2, 2]
 
         # 1.5 Exclusion filters with `duplicates`.
 
         expr = 'ip_address.duplicates()'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 10
+        seen_ip_addresses = []
+        for _, row in df.iterrows():
+            assert row['ip_address'] not in seen_ip_addresses
+            seen_ip_addresses.append(row['ip_address'])
 
         # 1.6 Exclusion filters with `valid` and `missing`.
 
         expr = 'valid(speak_spanish)'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 3
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity' and row[4] in (32766, 32767)
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert isnan(row['speak_spanish'])
 
         expr = 'not valid(speak_spanish)'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 9
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity' and row[4] not in (32766, 32767)
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert not isnan(row['speak_spanish'])
 
         expr = 'missing(speak_spanish)'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 9
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity' and row[4] not in (32766, 32767)
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert not isnan(row['speak_spanish'])
 
         expr = 'missing(hobbies)'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 11
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity'
+            and (row[5:9] != [32766, 32766, 32766, 32766]
+                 and row[5:9] != [32767, 32767, 32767, 32767])
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert row['hobbies'] != [{'?': 32766}, {'?': 32766},
+                                      {'?': 32766}, {'?': 32766}] \
+                   and row['hobbies'] != [{'?': 32767}, {'?': 32767},
+                                         {'?': 32767}, {'?': 32767}]
 
         expr = 'not missing(hobbies)'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 1
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity'
+            and (row[5:9] == [32766, 32766, 32766, 32766]
+                 or row[5:9] == [32767, 32767, 32767, 32767])
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert row['hobbies'] == [{'?': 32766}, {'?': 32766},
+                                      {'?': 32766}, {'?': 32766}] \
+                   or row['hobbies'] == [{'?': 32767}, {'?': 32767},
+                                         {'?': 32767}, {'?': 32767}]
 
         expr = 'valid(hobbies)'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 5
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity' and (32766 in row[5:9] or 32767 in row[5:9])
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert {'?': 32766} in row['hobbies'] or \
+                   {'?': 32767} in row['hobbies']
 
         expr = 'not valid(hobbies)'
         pycrunch.datasets.exclusion(dataset, expr)
         df = pandaslib.dataframe(dataset)
-        assert len(df) == 7
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity'
+            and (32766 not in row[5:9] and 32767 not in row[5:9])
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert {'?': 32766} not in row['hobbies'] and \
+                   {'?': 32767} not in row['hobbies']
 
         # 1.7 Clear the exclusion filter.
         pycrunch.datasets.exclusion(dataset)
@@ -432,7 +614,7 @@ def main():
         ]
 
         new_var = create_categorical(
-            ds=dataset,
+            dataset=dataset,
             categories=categories,
             rules=rules,
             name='Operating System Users',
@@ -448,21 +630,18 @@ def main():
         assert 'operating_system_users' in df
 
         # Check the nerds.
-        assert len(df[df['operating_system_users'] == 'Nerds']) == 8
         assert set(
             r['operating_system']
             for _, r in df[df['operating_system_users'] == 'Nerds'].iterrows()
         ) == {'Linux', 'Solaris', 'Minix', 'FreeBSD', 'NetBSD'}
 
         # Check the hipsters.
-        assert len(df[df['operating_system_users'] == 'Hipsters']) == 1
         assert set(
             r['operating_system']
             for _, r in df[df['operating_system_users'] == 'Hipsters'].iterrows()
         ) == {'MacOS'}
 
         # Check normal users.
-        assert len(df[df['operating_system_users'] == 'Normal Users']) == 3
         assert set(
             r['operating_system']
             for _, r in df[df['operating_system_users'] == 'Normal Users'].iterrows()
@@ -501,23 +680,32 @@ def main():
         assert 'bilingual' in df
 
         # Check the data in the recoded variable.
-        assert len(df[df['bilingual'] == 'Bilingual']) == 5
+        bilingual_ids = set(
+            row[0] for row in ROWS
+            if row[0] != 'identity' and row[4] in (2, 3)
+        )
         assert set(
             int(r['identity'])
             for _, r in df[df['bilingual'] == 'Bilingual'].iterrows()
-        ) == {3, 4, 10, 11, 12}
+        ) == bilingual_ids
 
-        assert len(df[df['bilingual'] == 'Not Bilingual']) == 4
+        non_bilingual_ids = set(
+            row[0] for row in ROWS
+            if row[0] != 'identity' and row[4] in (1, 4)
+        )
         assert set(
             int(r['identity'])
             for _, r in df[df['bilingual'] == 'Not Bilingual'].iterrows()
-        ) == {1, 2, 5, 6}
+        ) == non_bilingual_ids
 
-        assert len(df[df['bilingual'].isnull()]) == 3
+        bilingual_null_ids = set(
+            row[0] for row in ROWS
+            if row[0] != 'identity' and row[4] in (32766, 32767)
+        )
         assert set(
             int(r['identity'])
             for _, r in df[df['bilingual'].isnull()].iterrows()
-        ) == {7, 8, 9}
+        ) == bilingual_null_ids
 
         # On a 'categorical_array' variable.
         cat_map = {
@@ -548,7 +736,7 @@ def main():
         assert 'hobbies_recoded' in df
 
         # Check the data in the recoded variable.
-        for _, row in df[['hobbies', 'hobbies_recoded']].iterrows():
+        for _, row in df.iterrows():
             hobbies = row['hobbies']
             hobbies_rec = row['hobbies_recoded']
             assert len(hobbies) == len(hobbies_rec)
