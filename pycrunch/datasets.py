@@ -27,7 +27,7 @@ REQUIRES_RESPONSES = {"combined_ids", "name"}
 def var_name_to_url(ds, alias):
     """
     :param ds: The dataset we are gonna inspect
-    :param varname: the variable name we want to check
+    :param alias: the alias of the variable name we want to check
     :return: the id of the given varname or None
     """
     try:
@@ -39,7 +39,7 @@ def var_name_to_url(ds, alias):
 
 
 def variable_to_url(ds, variable):
-    """Receive an valid variable reference and return the variable url.
+    """Receive a valid variable reference and return the variable url.
 
     :param ds: The crunch dataset
     :param variable: A valid variable reference in the form of a shoji Entity
@@ -61,7 +61,7 @@ def variable_to_url(ds, variable):
 def aliases_to_urls(ds, variable_url, response_map):
     """
     Maps subvariable aliases to urls
-    :param ds: /Users/mbc/Yougov/Crunch/pycrunch/pycrunch/recodes.py
+    :param ds: a dataset object
     :param variable_url: url of the variable we want to inspect
     :param response_map: mapping of new subvariables
     :return:
@@ -81,7 +81,7 @@ def aliases_to_urls(ds, variable_url, response_map):
 def validate_category_map(map):
     """
     :param map: categories keyed by new category id mapped to existing ones
-    :return: a list of dictionary objects that the Crunch Api expects
+    :return: a list of dictionary objects that the Crunch API expects
     """
     for value in map.values():
         keys = set(list(value.keys()))
@@ -115,7 +115,7 @@ def validate_response_map(map):
 
 class Dataset(Entity):
     """
-    class for adding methods to the dataset entity
+    A pycrunch.shoji.Entity subclass that provides dataset-specific methods.
     """
 
     def exclusion(self, expr=None):
@@ -199,7 +199,6 @@ class Dataset(Entity):
                 "combined_ids": [1,2]
             },
         }
-        :param dataset: pycrunch session dataset
         :param variable: alias of the variable to recode
         :param name: name for the new variable
         :param alias: alias for the new variable
