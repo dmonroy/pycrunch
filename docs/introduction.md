@@ -11,6 +11,6 @@ Start a simple Crunch session:
 
 ```python
 import pycrunch
-site = pycrunch.connect("me@mycompany.com", "yourpassword", "https://beta.crunch.io/api/")
+site = pycrunch.connect("me@mycompany.com", "yourpassword", "https://app.crunch.io/api/")
 ```
 
