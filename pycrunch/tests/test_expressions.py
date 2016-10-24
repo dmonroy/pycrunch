@@ -782,6 +782,18 @@ class TestExpressionParsing(TestCase):
         with pytest.raises(ValueError):
             parse_expr("identity.duplicates(False)")
 
+    def test_multiple_and_or(self):
+        expected = {'args': [{'args': [{'variable': 'age'}, {'value': 1}], 'function': '=='},
+                  {'args': [{'args': [{'variable': 'test'}, {'value': 3}],
+                             'function': '=='},
+                            {'args': [{'variable': 'myop'}, {'value': 'age'}],
+                             'function': '=='}],
+                   'function': 'and'}],
+         'function': 'and'}
+        expr = 'age == 1 and test == 3 and myop == "age"'
+        expr_obj = parse_expr(expr)
+        assert expr_obj == expected
+
     def test_parse_helper_functions(self):
         # One variable.
         expr = "valid(birthyear)"

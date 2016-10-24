@@ -47,6 +47,24 @@ import copy
 NOT_IN = object()
 
 
+def _nest(args, func):
+    # for the moment we are just nesting and & or
+    if func not in ['or', 'and']:
+        return {
+            'function': func,
+            'args': args
+        }
+    if len(args) == 2:
+        return {
+            'function': func,
+            'args': args
+        }
+    return {
+        'function': func,
+        'args': [args[0], _nest(args[1:], func)]
+    }
+
+
 def parse_expr(expr):
 
     crunch_func_map = {
@@ -248,7 +266,8 @@ def parse_expr(expr):
                                 }
                             )
                     else:
-                        obj['args'] = args
+                        obj = _nest(args, op)
+                        # obj['args'] = args
 
         return obj
 
