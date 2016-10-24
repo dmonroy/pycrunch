@@ -18,6 +18,7 @@ class TestCreateCategorical(TestCase):
 
     def test_create_categorical_with_missing(self):
         var_id = '0001'
+        var_alias = 'gender'
         var_type = 'categorical'
         var_url = '%svariables/%s/' % (self.ds_url, var_id)
 
@@ -25,21 +26,41 @@ class TestCreateCategorical(TestCase):
         def _get(*args):
             if args[0] == 'id':
                 return var_id
+            if args[0] == 'alias':
+                return var_alias
             if args[0] == 'type':
                 return var_type
+            if args[0] == 'is_subvar':
+                return False
             return args[0]
 
-        ds = mock.MagicMock()
-        ds.__class__ = Dataset
-        ds.create_categorical = Dataset.create_categorical
-        ds.self = self.ds_url
         _var_mock = mock.MagicMock()
         _var_mock.entity.self = var_url
         _var_mock.__getitem__.side_effect = _get
         _var_mock.get.side_effect = _get
-        ds.variables.by.return_value = {
-            'gender': _var_mock
-        }
+
+        class CrunchPayload(dict):
+            def __getattr__(self, item):
+                if item == 'payload':
+                    return self
+                else:
+                    return self[item]
+
+        def _session_get(*args, **kwargs):
+            if args[0] == '%stable/' % self.ds_url:
+                return CrunchPayload({
+                    'metadata': {
+                        var_alias: _var_mock
+                    }
+                })
+            return CrunchPayload()
+
+        ds = mock.MagicMock()
+        ds.self = self.ds_url
+        ds.fragments.table = '%stable/' % self.ds_url
+        ds.__class__ = Dataset
+        ds.create_categorical = Dataset.create_categorical
+        ds.session.get.side_effect = _session_get
 
         ds.create_categorical(ds, categories, rules, 'name', 'alias', 'description')
         call = ds.variables.create.call_args_list[0][0][0]

@@ -258,6 +258,29 @@ def parse_expr(expr):
     return _parse(ast.parse(expr, mode='eval'))
 
 
+def get_dataset_variables(ds):
+    table_url = ds.fragments.table
+    table = ds.session.get(table_url, params={'limit': 0}).payload
+
+    # Build the variables dict, using `alias` as the key.
+    variables = dict()
+    for _id, var in table.metadata.items():
+        var['id'] = _id
+        variables[var['alias']] = var
+
+        if var['type'] in ('categorical_array', 'multiple_response'):
+            for i, subvar in enumerate(var.get('subreferences', [])):
+                subvar['is_subvar'] = True
+                subvar['id'] = var['subvariables'][i]
+                subvar['parent_id'] = _id
+                subvar['type'] = 'categorical'
+                subvar['description'] = ''
+                subvar['categories'] = copy.deepcopy(var['categories'])
+                variables[subvar['alias']] = subvar
+
+    return variables
+
+
 def process_expr(obj, ds):
     """
     Given a Crunch expression object (or objects) and a Dataset entity object
@@ -266,7 +289,7 @@ def process_expr(obj, ds):
     transformed into variable URLs, just as the crunch API needs them to be.
     """
     base_url = ds.self
-    variables = ds.variables.by('alias')
+    variables = get_dataset_variables(ds)
 
     def _process(obj, variables):
         op = None
@@ -291,10 +314,18 @@ def process_expr(obj, ds):
             elif key == 'variable':
                 var = variables.get(val)
                 if var:
-                    obj[key] = '%svariables/%s/' % (base_url, var['id'])
+                    if var.get('is_subvar'):
+                        obj[key] = '%svariables/%s/subvariables/%s/' \
+                                   % (base_url, var['parent_id'], var['id'])
+                    else:
+                        obj[key] = '%svariables/%s/' % (base_url, var['id'])
 
                     if var['type'] in ('categorical_array', 'multiple_response'):
-                        subvariables = var.get('subvariables', [])
+                        subvariables = [
+                            '%svariables/%s/subvariables/%s/'
+                            % (base_url, var['id'], subvar_id)
+                            for subvar_id in var.get('subvariables', [])
+                        ]
                 else:
                     raise ValueError("Invalid variable alias '%s'" % val)
             elif key == 'function':

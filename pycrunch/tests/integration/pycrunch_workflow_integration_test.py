@@ -588,7 +588,20 @@ def main():
             assert {'?': 32766} not in row['hobbies'] and \
                    {'?': 32767} not in row['hobbies']
 
-        # 1.7 Clear the exclusion filter.
+        # 1.7 Exclusion filter that refers to a subvariable by alias.
+        expr = 'hobbies_1 == 4'
+        dataset.exclusion(expr)
+        df = pandaslib.dataframe(dataset)
+        valid_ids = [
+            row[0] for row in ROWS
+            if row[0] != 'identity' and row[5] != 4
+        ]
+        assert len(df) == len(valid_ids)
+        for _, row in df.iterrows():
+            assert row['identity'] in valid_ids
+            assert row['hobbies'][0] != 4
+
+        # 1.8 Clear the exclusion filter.
         dataset.exclusion()
         df = pandaslib.dataframe(dataset)
         assert len(df) == len(ROWS) - 1  # excluding the header

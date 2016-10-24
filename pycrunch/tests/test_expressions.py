@@ -1047,6 +1047,15 @@ class TestExpressionParsing(TestCase):
 
 class TestExpressionProcessing(TestCase):
 
+    ds_url = 'http://test.crunch.io/api/datasets/123/'
+
+    class CrunchPayload(dict):
+        def __getattr__(self, item):
+            if item == 'payload':
+                return self
+            else:
+                return self[item]
+
     @staticmethod
     def _build_get_func(**kwargs):
         props = {}
@@ -1058,22 +1067,33 @@ class TestExpressionProcessing(TestCase):
         return _get
 
     def test_transform_alias_to_var_id(self):
-        ds_url = 'http://test.crunch.io/api/datasets/123/'
         var_id = '0001'
+        var_alias = 'age'
         var_type = 'numeric'
-        var_url = '%svariables/%s/' % (ds_url, var_id)
+        var_url = '%svariables/%s/' % (self.ds_url, var_id)
 
         # Mock the dataset.
-        _get_func = self._build_get_func(id=var_id, type=var_type)
-        ds = mock.MagicMock()
-        ds.self = ds_url
+        _get_func = self._build_get_func(
+            id=var_id, type=var_type, alias=var_alias, is_subvar=False
+        )
         _var_mock = mock.MagicMock()
         _var_mock.entity.self = var_url
         _var_mock.__getitem__.side_effect = _get_func
         _var_mock.get.side_effect = _get_func
-        ds.variables.by.return_value = {
-            'age': _var_mock
-        }
+
+        def _session_get(*args, **kwargs):
+            if args[0] == '%stable/' % self.ds_url:
+                return self.CrunchPayload({
+                    'metadata': {
+                        var_id: _var_mock
+                    }
+                })
+            return self.CrunchPayload()
+
+        ds = mock.MagicMock()
+        ds.self = self.ds_url
+        ds.fragments.table = '%stable/' % self.ds_url
+        ds.session.get.side_effect = _session_get
 
         expr_obj = process_expr(parse_expr('age == 1'), ds)
 
@@ -1089,30 +1109,105 @@ class TestExpressionProcessing(TestCase):
             ]
         }
 
-    def test_array_expansion_single_subvariable(self):
-        ds_url = 'http://test.crunch.io/api/datasets/123/'
+    def test_transform_subvar_alias_to_subvar_id(self):
         var_id = '0001'
+        var_alias = 'hobbies'
         var_type = 'categorical_array'
-        var_url = '%svariables/%s/' % (ds_url, var_id)
+        var_url = '%svariables/%s/' % (self.ds_url, var_id)
         subvariables = [
-            '%ssubvariables/0001/' % var_url
+            '0001',
+            '0002'
+        ]
+        subreferences = [
+            {
+                'alias': 'hobbies_1'
+            },
+            {
+                'alias': 'hobbies_2'
+            }
         ]
 
         # Mock the dataset.
         _get_func = self._build_get_func(
-            id=var_id, type=var_type, subvariables=subvariables
+            id=var_id, type=var_type, alias=var_alias, is_subvar=False,
+            subvariables=subvariables,
+            subreferences=subreferences
         )
-        ds = mock.MagicMock()
-        ds.self = ds_url
         _var_mock = mock.MagicMock()
         _var_mock.entity.self = var_url
         _var_mock.__getitem__.side_effect = _get_func
         _var_mock.get.side_effect = _get_func
-
         _var_mock.subvariables = subvariables
-        ds.variables.by.return_value = {
-            'hobbies': _var_mock
+        _var_mock.subreferences = subreferences
+
+        def _session_get(*args, **kwargs):
+            if args[0] == '%stable/' % self.ds_url:
+                return self.CrunchPayload({
+                    'metadata': {
+                        var_id: _var_mock
+                    }
+                })
+            return self.CrunchPayload()
+
+        ds = mock.MagicMock()
+        ds.self = self.ds_url
+        ds.fragments.table = '%stable/' % self.ds_url
+        ds.session.get.side_effect = _session_get
+
+        expr = 'hobbies_1 == 4'
+        expr_obj = process_expr(parse_expr(expr), ds)
+        assert expr_obj == {
+            'function': '==',
+            'args': [
+                {
+                    'variable': '%ssubvariables/%s/' % (var_url, subvariables[0])
+                },
+                {
+                    'value': 4
+                }
+            ]
         }
+
+    def test_array_expansion_single_subvariable(self):
+        var_id = '0001'
+        var_alias = 'hobbies'
+        var_type = 'categorical_array'
+        var_url = '%svariables/%s/' % (self.ds_url, var_id)
+        subvariables = [
+            '0001'
+        ]
+        subreferences = [
+            {
+                'alias': 'hobbies_1'
+            }
+        ]
+
+        # Mock the dataset.
+        _get_func = self._build_get_func(
+            id=var_id, type=var_type, alias=var_alias, is_subvar=False,
+            subvariables=subvariables,
+            subreferences=subreferences
+        )
+        _var_mock = mock.MagicMock()
+        _var_mock.entity.self = var_url
+        _var_mock.__getitem__.side_effect = _get_func
+        _var_mock.get.side_effect = _get_func
+        _var_mock.subvariables = subvariables
+        _var_mock.subreferences = subreferences
+
+        def _session_get(*args, **kwargs):
+            if args[0] == '%stable/' % self.ds_url:
+                return self.CrunchPayload({
+                    'metadata': {
+                        var_id: _var_mock
+                    }
+                })
+            return self.CrunchPayload()
+
+        ds = mock.MagicMock()
+        ds.self = self.ds_url
+        ds.fragments.table = '%stable/' % self.ds_url
+        ds.session.get.side_effect = _session_get
 
         # Single value.
         expr_obj = process_expr(parse_expr('hobbies.has_any([32766])'), ds)
@@ -1120,7 +1215,7 @@ class TestExpressionProcessing(TestCase):
             'function': 'in',
             'args': [
                 {
-                    'variable': subvariables[0]
+                    'variable': '%ssubvariables/%s/' % (var_url, subvariables[0])
                 },
                 {
                     'value': [32766]
@@ -1133,7 +1228,7 @@ class TestExpressionProcessing(TestCase):
             'function': '==',
             'args': [
                 {
-                    'variable': subvariables[0]
+                    'variable': '%ssubvariables/%s/' % (var_url, subvariables[0])
                 },
                 {
                     'value': 32766
@@ -1150,7 +1245,7 @@ class TestExpressionProcessing(TestCase):
                     'function': 'in',
                     'args': [
                         {
-                            'variable': subvariables[0]
+                            'variable': '%ssubvariables/%s/' % (var_url, subvariables[0])
                         },
                         {
                             'value': [32766]
@@ -1169,7 +1264,7 @@ class TestExpressionProcessing(TestCase):
                     'function': '==',
                     'args': [
                         {
-                            'variable': subvariables[0]
+                            'variable': '%ssubvariables/%s/' % (var_url, subvariables[0])
                         },
                         {
                             'value': 32766
@@ -1186,7 +1281,7 @@ class TestExpressionProcessing(TestCase):
             'function': 'in',
             'args': [
                 {
-                    'variable': subvariables[0]
+                    'variable': '%ssubvariables/%s/' % (var_url, subvariables[0])
                 },
                 {
                     'value': [32766, 32767]
@@ -1198,32 +1293,57 @@ class TestExpressionProcessing(TestCase):
             process_expr(parse_expr('hobbies.has_all([32766, 32767])'), ds)
 
     def test_array_expansion_multiple_subvariables(self):
-        ds_url = 'http://test.crunch.io/api/datasets/123/'
         var_id = '0001'
+        var_alias = 'hobbies'
         var_type = 'categorical_array'
-        var_url = '%svariables/%s/' % (ds_url, var_id)
+        var_url = '%svariables/%s/' % (self.ds_url, var_id)
         subvariables = [
-            '%ssubvariables/0001/' % var_url,
-            '%ssubvariables/0002/' % var_url,
-            '%ssubvariables/0003/' % var_url,
-            '%ssubvariables/0004/' % var_url
+            '0001',
+            '0002',
+            '0003',
+            '0004'
+        ]
+        subreferences = [
+            {
+                'alias': 'hobbies_1'
+            },
+            {
+                'alias': 'hobbies_2'
+            },
+            {
+                'alias': 'hobbies_3'
+            },
+            {
+                'alias': 'hobbies_4'
+            }
         ]
 
         # Mock the dataset.
         _get_func = self._build_get_func(
-            id=var_id, type=var_type, subvariables=subvariables
+            id=var_id, type=var_type, alias=var_alias, is_subvar=False,
+            subvariables=subvariables,
+            subreferences=subreferences
         )
-        ds = mock.MagicMock()
-        ds.self = ds_url
         _var_mock = mock.MagicMock()
         _var_mock.entity.self = var_url
         _var_mock.__getitem__.side_effect = _get_func
         _var_mock.get.side_effect = _get_func
-
         _var_mock.subvariables = subvariables
-        ds.variables.by.return_value = {
-            'hobbies': _var_mock
-        }
+        _var_mock.subreferences = subreferences
+
+        def _session_get(*args, **kwargs):
+            if args[0] == '%stable/' % self.ds_url:
+                return self.CrunchPayload({
+                    'metadata': {
+                        var_id: _var_mock
+                    }
+                })
+            return self.CrunchPayload()
+
+        ds = mock.MagicMock()
+        ds.self = self.ds_url
+        ds.fragments.table = '%stable/' % self.ds_url
+        ds.session.get.side_effect = _session_get
 
         # Single values.
         expr = 'hobbies.has_any([32766])'
@@ -1235,7 +1355,7 @@ class TestExpressionProcessing(TestCase):
                     'function': 'in',
                     'args': [
                         {
-                            'variable': subvariables[0]
+                            'variable': '%ssubvariables/%s/' % (var_url, subvariables[0])
                         },
                         {
                             'value': [32766]
@@ -1249,7 +1369,7 @@ class TestExpressionProcessing(TestCase):
                             'function': 'in',
                             'args': [
                                 {
-                                    'variable': subvariables[1]
+                                    'variable': '%ssubvariables/%s/' % (var_url, subvariables[1])
                                 },
                                 {
                                     'value': [32766]
@@ -1263,7 +1383,7 @@ class TestExpressionProcessing(TestCase):
                                     'function': 'in',
                                     'args': [
                                         {
-                                            'variable': subvariables[2]
+                                            'variable': '%ssubvariables/%s/' % (var_url, subvariables[2])
                                         },
                                         {
                                             'value': [32766]
@@ -1274,7 +1394,7 @@ class TestExpressionProcessing(TestCase):
                                     'function': 'in',
                                     'args': [
                                         {
-                                            'variable': subvariables[3]
+                                            'variable': '%ssubvariables/%s/' % (var_url, subvariables[3])
                                         },
                                         {
                                             'value': [32766]
@@ -1297,7 +1417,7 @@ class TestExpressionProcessing(TestCase):
                     'function': '==',
                     'args': [
                         {
-                            'variable': subvariables[0]
+                            'variable': '%ssubvariables/%s/' % (var_url, subvariables[0])
                         },
                         {
                             'value': 32766
@@ -1311,7 +1431,7 @@ class TestExpressionProcessing(TestCase):
                             'function': '==',
                             'args': [
                                 {
-                                    'variable': subvariables[1]
+                                    'variable': '%ssubvariables/%s/' % (var_url, subvariables[1])
                                 },
                                 {
                                     'value': 32766
@@ -1325,7 +1445,7 @@ class TestExpressionProcessing(TestCase):
                                     'function': '==',
                                     'args': [
                                         {
-                                            'variable': subvariables[2]
+                                            'variable': '%ssubvariables/%s/' % (var_url, subvariables[2])
                                         },
                                         {
                                             'value': 32766
@@ -1336,7 +1456,7 @@ class TestExpressionProcessing(TestCase):
                                     'function': '==',
                                     'args': [
                                         {
-                                            'variable': subvariables[3]
+                                            'variable': '%ssubvariables/%s/' % (var_url, subvariables[3])
                                         },
                                         {
                                             'value': 32766
@@ -1363,7 +1483,7 @@ class TestExpressionProcessing(TestCase):
                             'function': 'in',
                             'args': [
                                 {
-                                    'variable': subvariables[0]
+                                    'variable': '%ssubvariables/%s/' % (var_url, subvariables[0])
                                 },
                                 {
                                     'value': [32766]
@@ -1377,7 +1497,7 @@ class TestExpressionProcessing(TestCase):
                                     'function': 'in',
                                     'args': [
                                         {
-                                            'variable': subvariables[1]
+                                            'variable': '%ssubvariables/%s/' % (var_url, subvariables[1])
                                         },
                                         {
                                             'value': [32766]
@@ -1391,7 +1511,7 @@ class TestExpressionProcessing(TestCase):
                                             'function': 'in',
                                             'args': [
                                                 {
-                                                    'variable': subvariables[2]
+                                                    'variable': '%ssubvariables/%s/' % (var_url, subvariables[2])
                                                 },
                                                 {
                                                     'value': [32766]
@@ -1402,7 +1522,7 @@ class TestExpressionProcessing(TestCase):
                                             'function': 'in',
                                             'args': [
                                                 {
-                                                    'variable': subvariables[3]
+                                                    'variable': '%ssubvariables/%s/' % (var_url, subvariables[3])
                                                 },
                                                 {
                                                     'value': [32766]
@@ -1430,7 +1550,7 @@ class TestExpressionProcessing(TestCase):
                             'function': '==',
                             'args': [
                                 {
-                                    'variable': subvariables[0]
+                                    'variable': '%ssubvariables/%s/' % (var_url, subvariables[0])
                                 },
                                 {
                                     'value': 32766
@@ -1444,7 +1564,7 @@ class TestExpressionProcessing(TestCase):
                                     'function': '==',
                                     'args': [
                                         {
-                                            'variable': subvariables[1]
+                                            'variable': '%ssubvariables/%s/' % (var_url, subvariables[1])
                                         },
                                         {
                                             'value': 32766
@@ -1458,7 +1578,7 @@ class TestExpressionProcessing(TestCase):
                                             'function': '==',
                                             'args': [
                                                 {
-                                                    'variable': subvariables[2]
+                                                    'variable': '%ssubvariables/%s/' % (var_url, subvariables[2])
                                                 },
                                                 {
                                                     'value': 32766
@@ -1469,7 +1589,7 @@ class TestExpressionProcessing(TestCase):
                                             'function': '==',
                                             'args': [
                                                 {
-                                                    'variable': subvariables[3]
+                                                    'variable': '%ssubvariables/%s/' % (var_url, subvariables[3])
                                                 },
                                                 {
                                                     'value': 32766
@@ -1495,7 +1615,7 @@ class TestExpressionProcessing(TestCase):
                     'function': 'in',
                     'args': [
                         {
-                            'variable': subvariables[0]
+                            'variable': '%ssubvariables/%s/' % (var_url, subvariables[0])
                         },
                         {
                             'value': [32766, 32767]
@@ -1509,7 +1629,7 @@ class TestExpressionProcessing(TestCase):
                             'function': 'in',
                             'args': [
                                 {
-                                    'variable': subvariables[1]
+                                    'variable': '%ssubvariables/%s/' % (var_url, subvariables[1])
                                 },
                                 {
                                     'value': [32766, 32767]
@@ -1523,7 +1643,7 @@ class TestExpressionProcessing(TestCase):
                                     'function': 'in',
                                     'args': [
                                         {
-                                            'variable': subvariables[2]
+                                            'variable': '%ssubvariables/%s/' % (var_url, subvariables[2])
                                         },
                                         {
                                             'value': [32766, 32767]
@@ -1534,7 +1654,7 @@ class TestExpressionProcessing(TestCase):
                                     'function': 'in',
                                     'args': [
                                         {
-                                            'variable': subvariables[3]
+                                            'variable': '%ssubvariables/%s/' % (var_url, subvariables[3])
                                         },
                                         {
                                             'value': [32766, 32767]
@@ -1561,7 +1681,7 @@ class TestExpressionProcessing(TestCase):
                             'function': 'in',
                             'args': [
                                 {
-                                    'variable': subvariables[0]
+                                    'variable': '%ssubvariables/%s/' % (var_url, subvariables[0])
                                 },
                                 {
                                     'value': [32766, 32767]
@@ -1575,7 +1695,7 @@ class TestExpressionProcessing(TestCase):
                                     'function': 'in',
                                     'args': [
                                         {
-                                            'variable': subvariables[1]
+                                            'variable': '%ssubvariables/%s/' % (var_url, subvariables[1])
                                         },
                                         {
                                             'value': [32766, 32767]
@@ -1589,7 +1709,7 @@ class TestExpressionProcessing(TestCase):
                                             'function': 'in',
                                             'args': [
                                                 {
-                                                    'variable': subvariables[2]
+                                                    'variable': '%ssubvariables/%s/' % (var_url, subvariables[2])
                                                 },
                                                 {
                                                     'value': [32766, 32767]
@@ -1600,7 +1720,7 @@ class TestExpressionProcessing(TestCase):
                                             'function': 'in',
                                             'args': [
                                                 {
-                                                    'variable': subvariables[3]
+                                                    'variable': '%ssubvariables/%s/' % (var_url, subvariables[3])
                                                 },
                                                 {
                                                     'value': [32766, 32767]
@@ -1617,32 +1737,57 @@ class TestExpressionProcessing(TestCase):
         }
 
     def test_valid_and_missing_funcs_for_arrays(self):
-        ds_url = 'http://test.crunch.io/api/datasets/123/'
         var_id = '0001'
+        var_alias = 'hobbies'
         var_type = 'categorical_array'
-        var_url = '%svariables/%s/' % (ds_url, var_id)
+        var_url = '%svariables/%s/' % (self.ds_url, var_id)
         subvariables = [
-            '%ssubvariables/0001/' % var_url,
-            '%ssubvariables/0002/' % var_url,
-            '%ssubvariables/0003/' % var_url,
-            '%ssubvariables/0004/' % var_url
+            '0001',
+            '0002',
+            '0003',
+            '0004'
+        ]
+        subreferences = [
+            {
+                'alias': 'hobbies_1'
+            },
+            {
+                'alias': 'hobbies_2'
+            },
+            {
+                'alias': 'hobbies_3'
+            },
+            {
+                'alias': 'hobbies_4'
+            }
         ]
 
         # Mock the dataset.
         _get_func = self._build_get_func(
-            id=var_id, type=var_type, subvariables=subvariables
+            id=var_id, type=var_type, alias=var_alias, is_subvar=False,
+            subvariables=subvariables,
+            subreferences=subreferences
         )
-        ds = mock.MagicMock()
-        ds.self = ds_url
         _var_mock = mock.MagicMock()
         _var_mock.entity.self = var_url
         _var_mock.__getitem__.side_effect = _get_func
         _var_mock.get.side_effect = _get_func
-
         _var_mock.subvariables = subvariables
-        ds.variables.by.return_value = {
-            'hobbies': _var_mock
-        }
+        _var_mock.subreferences = subreferences
+
+        def _session_get(*args, **kwargs):
+            if args[0] == '%stable/' % self.ds_url:
+                return self.CrunchPayload({
+                    'metadata': {
+                        var_id: _var_mock
+                    }
+                })
+            return self.CrunchPayload()
+
+        ds = mock.MagicMock()
+        ds.self = self.ds_url
+        ds.fragments.table = '%stable/' % self.ds_url
+        ds.session.get.side_effect = _session_get
 
         expr = 'valid(hobbies)'
         expr_obj = process_expr(parse_expr(expr), ds)
