@@ -3,7 +3,9 @@ import json
 from unittest import TestCase
 from unittest import mock
 
+import pytest
 from pycrunch.datasets import Dataset
+from pycrunch.shoji import Tuple, Entity
 
 
 class TestExclusionFilters(TestCase):
@@ -97,3 +99,24 @@ class TestExclusionFilters(TestCase):
             ds.fragments.exclusion,
             data=json.dumps({'expression': {}})
         )
+
+
+class TestVariables(TestCase):
+    def test_variable_as_attribute(self):
+        session = mock.MagicMock()
+
+        test_variable = mock.MagicMock()
+        test_variable.entity = Entity(session=session)
+
+        variables = {
+            'test_variable': test_variable
+        }
+        dataset = Dataset({})
+        dataset.variables = mock.MagicMock()
+        dataset.variables.by.return_value = variables
+
+        assert isinstance(dataset.test_variable, Entity)
+        with pytest.raises(AttributeError) as err:
+            dataset.another_variable
+
+        assert str(err.value) == 'Dataset has no attribute another_variable'
