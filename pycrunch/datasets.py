@@ -118,6 +118,22 @@ class Dataset(Entity):
     A pycrunch.shoji.Entity subclass that provides dataset-specific methods.
     """
 
+    def __getattr__(self, item):
+        # First check if the parent class provides the attribute
+        try:
+            return super(Dataset, self).__getattr__(item)
+        except AttributeError:
+            # If not, then check if the attribute corresponds to a variable
+            # alias
+            variable = self.variables.by('alias').get(item)
+
+            if variable is None:
+                # Variable doesn't exists, must raise an AttributeError
+                raise
+
+            # Variable exists!, return the variable entity
+            return variable.entity
+
     def exclusion(self, expr=None):
         """
         Given a dataset object, apply an exclusion filter to it (defined as an
