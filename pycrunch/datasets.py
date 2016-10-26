@@ -141,11 +141,9 @@ class Dataset(Entity):
 
     def create_categorical(self, categories, rules,
                            name, alias, description='', missing=True):
-
         """
-        creates a categorical variable deriving from other variables
+        creates a categorical variable deriving from other variablestre
         """
-
         if not ((len(categories) - 1) <= len(rules) <= len(categories)):
             raise ValueError(
                 'Amount of rules should match categories (or categories -1')
