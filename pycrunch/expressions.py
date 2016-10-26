@@ -166,9 +166,21 @@ def parse_expr(expr):
                         op = 'or'
                     elif isinstance(_val, ast.Not):
                         op = 'not'
+                        # PIZZA
+                    elif isinstance(_val, ast.Mult):
+                        op = '*'
+                    elif isinstance(_val, ast.Add):
+                        op = '+'
+                    elif isinstance(_val, ast.Div):
+                        op = '/'
+                    elif isinstance(_val, ast.Sub):
+                        op = '-'
                     elif _name == 'left':
                         left = _parse(_val, parent=node)
                         args.append(left)
+                    elif _name == 'right':
+                        right = _parse(_val, parent=node)
+                        args.append(right)
                     elif _name == 'func' and isinstance(_val, ast.Attribute):
                         # Method-like call. Example:
                         #       variable.has_any([1,2])
@@ -267,7 +279,6 @@ def parse_expr(expr):
                             )
                     else:
                         obj = _nest(args, op)
-                        # obj['args'] = args
 
         return obj
 

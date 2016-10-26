@@ -783,14 +783,114 @@ class TestExpressionParsing(TestCase):
             parse_expr("identity.duplicates(False)")
 
     def test_multiple_and_or(self):
-        expected = {'args': [{'args': [{'variable': 'age'}, {'value': 1}], 'function': '=='},
-                  {'args': [{'args': [{'variable': 'test'}, {'value': 3}],
-                             'function': '=='},
-                            {'args': [{'variable': 'myop'}, {'value': 'age'}],
-                             'function': '=='}],
-                   'function': 'and'}],
-         'function': 'and'}
         expr = 'age == 1 and test == 3 and myop == "age"'
+        expected = {
+            'args': [
+                {
+                    'args': [
+                        {'variable': 'age'},
+                        {'value': 1}
+                    ],
+                    'function': '=='
+                },
+                {
+                    'args': [
+                        {
+                            'args': [
+                                {'variable': 'test'},
+                                {'value': 3}
+                            ],
+                            'function': '=='
+                        },
+                        {
+                            'args': [
+                                {'variable': 'myop'},
+                                {'value': 'age'}
+                            ],
+                            'function': '=='
+                        }
+                    ],
+                   'function': 'and'
+                }
+            ],
+            'function': 'and'
+        }
+        expr_obj = parse_expr(expr)
+        assert expr_obj == expected
+
+    def test_arithmetic_operations(self):
+        expr = "var1 + 3 == var2 - 2 and var3 / 1 == var4 * 10"
+        expected = {
+            'args': [
+                {
+                    'args': [
+                        {
+                            'args': [
+                                {'variable': 'var1'},
+                                {'value': 3}
+                            ],
+                            'function': '+'
+                        },
+                        {
+                            'args': [
+                                {'variable': 'var2'},
+                                {'value': 2}
+                            ],
+                            'function': '-'}
+                    ],
+                    'function': '=='
+                },
+                {
+                    'args': [
+                        {
+                            'args': [
+                                {'variable': 'var3'},
+                                {'value': 1}
+                            ],
+                            'function': '/'
+                        },
+                        {
+                            'args': [
+                                {'variable': 'var4'},
+                                {'value': 10}
+                            ],
+                            'function': '*'}
+                    ],
+                    'function': '=='
+                }
+            ],
+            'function': 'and'
+        }
+        expr_obj = parse_expr(expr)
+        assert expr_obj == expected
+
+    def test_arithmetic_operator_presedence(self):
+        expr = "var1 * 10 + 3 / 2 == var2"
+        expected = {
+            'args': [
+                {
+                    'args': [
+                        {
+                            'args': [
+                                {'variable': 'var1'},
+                                {'value': 10}
+                            ],
+                            'function': '*'
+                        },
+                        {
+                            'args': [
+                                {'value': 3},
+                                {'value': 2}
+                            ],
+                            'function': '/'
+                        }
+                    ],
+                    'function': '+'
+                },
+                {'variable': 'var2'}
+            ],
+            'function': '=='
+        }
         expr_obj = parse_expr(expr)
         assert expr_obj == expected
 
