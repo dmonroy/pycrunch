@@ -166,7 +166,6 @@ def parse_expr(expr):
                         op = 'or'
                     elif isinstance(_val, ast.Not):
                         op = 'not'
-                        # PIZZA
                     elif isinstance(_val, ast.Mult):
                         op = '*'
                     elif isinstance(_val, ast.Add):
