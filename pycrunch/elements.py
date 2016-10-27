@@ -97,7 +97,7 @@ def parse_element(session, j):
             j[k] = parse_element(session, v)
 
         elem = j.get("element", None)
-        if elem == 'shoji:entity' and is_dataset(j):
+        if session.has_sugar and elem == 'shoji:entity' and is_dataset(j):
             return pycrunch.datasets.Dataset(session, **j)
         if elem in elements:
             return elements[elem](session, **j)
@@ -248,12 +248,13 @@ class ElementSession(lemonpy.Session):
     handler_class = ElementResponseHandler
 
     def __init__(self, email=None, password=None, token=None, domain=None,
-                 progress_tracking=None):
+                 progress_tracking=None, sugar=False):
         self.email = email
         self.password = password
         self.token = token
         self.domain = domain
         self.progress_tracking = progress_tracking or DefaultProgressTracking()
+        self.has_sugar = sugar
         super(ElementSession, self).__init__()
 
 

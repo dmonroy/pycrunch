@@ -220,7 +220,7 @@ class CrunchTable(elements.Document):
 session = None
 
 
-def connect(user, pw, site_url="https://app.crunch.io/api/", progress_tracking=None):
+def connect(user, pw, site_url="https://app.crunch.io/api/", progress_tracking=None, sugar=False):
     """
     Log in to Crunch with a user/pw; return the top-level Site payload.  Using
     this or the other connect method (the first time only) stores a reference
@@ -229,13 +229,18 @@ def connect(user, pw, site_url="https://app.crunch.io/api/", progress_tracking=N
     Returns the API Root Entity, or errors if unable to connect.
     """
     global session
-    ret = Session(user, pw, progress_tracking=progress_tracking).get(site_url).payload
+    ret = Session(
+        email=user,
+        password=pw,
+        progress_tracking=progress_tracking,
+        sugar=sugar
+    ).get(site_url).payload
     if session is None:
         session = ret
     return ret
 
 
-def connect_with_token(token, site_url="https://us.crunch.io/api/", progress_tracking=None):
+def connect_with_token(token, site_url="https://us.crunch.io/api/", progress_tracking=None, sugar=False):
     """
     Log in to Crunch with a token; return the top-level Site payload. Using
     this or the other connect method (the first time only) stores a reference
@@ -247,7 +252,8 @@ def connect_with_token(token, site_url="https://us.crunch.io/api/", progress_tra
     ret = Session(
         token=token,
         domain=urllib.parse.urlparse(site_url).netloc,
-        progress_tracking=progress_tracking
+        progress_tracking=progress_tracking,
+        sugar=sugar
     ).get(site_url).payload
     if session is None:
         session = ret
