@@ -48,8 +48,18 @@ my_var = my_dataset.variables.create(var_body)
 
 #### Loading an existing variable
 
+The common way to load an existing variable entity is by accessing the 
+`variables` catalog, then search the variable by its alias, like the 
+code below:
+
 ```python
 my_var = my_dataset.variables.by('alias').get('my_alias').entity
+```
+
+Variables are also available as attributes in the dataset entity:
+
+```python
+my_var = my_dataset.my_alias
 ```
 
 #### Change the variable's attributes
