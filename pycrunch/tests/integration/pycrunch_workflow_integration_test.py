@@ -270,7 +270,7 @@ def main():
     assert not invalid_credentials()
 
     # Login.
-    site = pycrunch.connect(CRUNCH_USER, CRUNCH_PASSWORD, CRUNCH_URL)
+    site = pycrunch.connect(CRUNCH_USER, CRUNCH_PASSWORD, CRUNCH_URL, sugar=True)
     assert isinstance(site, pycrunch.shoji.Catalog)
 
     # Create the test dataset.
