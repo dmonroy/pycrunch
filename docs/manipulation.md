@@ -13,8 +13,14 @@ Drop rules are used to delete invalid cases -- respondents who spent too little
 time answering the survey ("speeders"), cases with inconsistent data, etc. 
 In Crunch, these are supported using *exclusion filters*, which are specified using a logical expression.
 
-For example, suppose `Omnibus` is the name of a crunch dataset 
-(assigned to the Python object `ds` ) and `disposition` is the alias of a variable in this dataset:
+For example, suppose `Omnibus` is the name of a crunch dataset and `disposition` 
+is the alias of a variable, start by loading the dataset:
+
+```python
+my_dataset = site.datasets.by('name').get('Omnibus').entity
+```
+
+Now apply the exclusion filter:
 
 ```python
 my_dataset.exclusion("disposition != 0")
