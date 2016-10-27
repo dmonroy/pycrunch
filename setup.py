@@ -50,6 +50,7 @@ setup_params = dict(
         'mock',
         'pandas',
         'pytest',
+        'pytest-cov',
     ],
     setup_requires=[
     ] + pytest_runner,
