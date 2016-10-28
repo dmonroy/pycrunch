@@ -60,12 +60,12 @@ class TestExclusionFilters(TestCase):
         ds.fragments.exclusion = '%sexclusion/' % self.ds_url
         ds.fragments.table = '%stable/' % self.ds_url
         ds.__class__ = Dataset
-        ds.exclusion = Dataset.exclusion
+        ds.exclude = Dataset.exclude
         ds.session.get.side_effect = _session_get
 
         # Action!
         exclusion_filter = 'disposition != 0'
-        ds.exclusion(ds, exclusion_filter)
+        ds.exclude(ds, exclusion_filter)
 
         # Ensure .patch was called the right way.
         assert len(ds.session.patch.call_args_list) == 1
@@ -92,8 +92,8 @@ class TestExclusionFilters(TestCase):
         ds = mock.MagicMock()
         ds.fragments.exclusion = '%sexclusion/' % self.ds_url
         ds.__class__ = Dataset
-        ds.exclusion = Dataset.exclusion
-        ds.exclusion(ds)
+        ds.exclude = Dataset.exclude
+        ds.exclude(ds)
 
         ds.session.patch.assert_called_once_with(
             ds.fragments.exclusion,

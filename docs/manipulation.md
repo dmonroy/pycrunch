@@ -23,7 +23,7 @@ my_dataset = site.datasets.by('name').get('Omnibus').entity
 Now apply the exclusion filter:
 
 ```python
-my_dataset.exclusion("disposition != 0")
+my_dataset.exclude("disposition != 0")
 ```
 
 (Here, zero is the id (or code) assigned to completed interviews.)
@@ -31,7 +31,7 @@ my_dataset.exclusion("disposition != 0")
 We can also exclude a list of ids using:
 
 ```python
-my_dataset.exclusion("disposition in [0, 1]")
+my_dataset.exclude("disposition in [0, 1]")
 ```
 
 #### Filter expressions

@@ -289,7 +289,7 @@ def main():
 
         # 1.1 Set a simple exclusion filter.
 
-        dataset.exclusion('identity > 5')
+        dataset.exclude('identity > 5')
         df = pandaslib.dataframe(dataset)
         assert len(df) == 5
         assert not any(r['identity'] > 5 for _, r in df.iterrows())
@@ -297,7 +297,7 @@ def main():
         # 1.2 More complex exclusion filters involving a categorical variable.
 
         expr = 'speak_spanish in [32766]'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -308,7 +308,7 @@ def main():
             assert row['identity'] in valid_ids
 
         expr = 'speak_spanish in (32766, 32767)'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -320,7 +320,7 @@ def main():
             assert not isnan(row['speak_spanish'])
 
         expr = 'not (speak_spanish in (1, 2) and operating_system == "Linux")'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -337,7 +337,7 @@ def main():
         # 1.3 Exclusion filters with `has_any`.
 
         expr = 'hobbies.has_any([32766])'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -349,7 +349,7 @@ def main():
             assert {'?': 32766} not in row['hobbies']
 
         expr = 'not hobbies.has_any([32766])'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -361,7 +361,7 @@ def main():
             assert {'?': 32766} in row['hobbies']
 
         expr = 'hobbies.has_any([32766, 32767])'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -375,7 +375,7 @@ def main():
                    {'?': 32767} not in row['hobbies']
 
         expr = 'music.has_any([32766])'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -387,7 +387,7 @@ def main():
             assert {'?': 32766} not in row['music']
 
         expr = 'music.has_any([1])'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -399,7 +399,7 @@ def main():
             assert 1 not in row['music']
 
         expr = 'music.has_any([1, 2])'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -414,7 +414,7 @@ def main():
         # 1.4 Exclusion filters with `has_all`.
 
         expr = 'hobbies.has_all([32767])'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -427,7 +427,7 @@ def main():
                                       {'?': 32767}, {'?': 32767}]
 
         expr = 'not hobbies.has_all([32767])'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -440,7 +440,7 @@ def main():
                                       {'?': 32767}, {'?': 32767}]
 
         expr = 'music.has_all([1])'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -452,7 +452,7 @@ def main():
             assert row['music'] != [1, 1, 1, 1, 1]
 
         expr = 'music.has_all([1]) or music.has_all([2])'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -466,7 +466,7 @@ def main():
                    row['music'] != [2, 2, 2, 2, 2]
 
         expr = 'not ( music.has_all([1]) or music.has_all([2]) )'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -482,7 +482,7 @@ def main():
         # 1.5 Exclusion filters with `duplicates`.
 
         expr = 'ip_address.duplicates()'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         seen_ip_addresses = []
         for _, row in df.iterrows():
@@ -492,7 +492,7 @@ def main():
         # 1.6 Exclusion filters with `valid` and `missing`.
 
         expr = 'valid(speak_spanish)'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -504,7 +504,7 @@ def main():
             assert isnan(row['speak_spanish'])
 
         expr = 'not valid(speak_spanish)'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -516,7 +516,7 @@ def main():
             assert not isnan(row['speak_spanish'])
 
         expr = 'missing(speak_spanish)'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -528,7 +528,7 @@ def main():
             assert not isnan(row['speak_spanish'])
 
         expr = 'missing(hobbies)'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -545,7 +545,7 @@ def main():
                                          {'?': 32767}, {'?': 32767}]
 
         expr = 'not missing(hobbies)'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -562,7 +562,7 @@ def main():
                                          {'?': 32767}, {'?': 32767}]
 
         expr = 'valid(hobbies)'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -575,7 +575,7 @@ def main():
                    {'?': 32767} in row['hobbies']
 
         expr = 'not valid(hobbies)'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -590,7 +590,7 @@ def main():
 
         # 1.7 Exclusion filter that refers to a subvariable by alias.
         expr = 'hobbies_1 == 4'
-        dataset.exclusion(expr)
+        dataset.exclude(expr)
         df = pandaslib.dataframe(dataset)
         valid_ids = [
             row[0] for row in ROWS
@@ -602,7 +602,7 @@ def main():
             assert row['hobbies'][0] != 4
 
         # 1.8 Clear the exclusion filter.
-        dataset.exclusion()
+        dataset.exclude()
         df = pandaslib.dataframe(dataset)
         assert len(df) == len(ROWS) - 1  # excluding the header
 

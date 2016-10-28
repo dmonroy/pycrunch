@@ -134,7 +134,7 @@ class Dataset(Entity):
             # Variable exists!, return the variable entity
             return variable.entity
 
-    def exclusion(self, expr=None):
+    def exclude(self, expr=None):
         """
         Given a dataset object, apply an exclusion filter to it (defined as an
         expression string).
