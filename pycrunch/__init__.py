@@ -178,7 +178,7 @@ You typically add new resources to a Catalog via its `create` method:
         ]
     })
 """
-
+from pycrunch.elements import EntityClassRegistry
 from six.moves import urllib
 
 from pycrunch import csvlib
@@ -274,3 +274,9 @@ def get_dataset(dataset_name_or_id, site=None):
         dataset = ds_catalog.by('id')[dataset_name_or_id].entity
     return dataset
 
+
+def register(entity_type, klass):
+    """
+    Register the python class for the entity type
+    """
+    EntityClassRegistry.register(entity_type, klass)
