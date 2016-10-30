@@ -7,6 +7,8 @@ for the latest Shoji specification.
 import json
 
 import time
+
+from pycrunch import EntityClassRegistry
 from six.moves import urllib
 
 import six
@@ -118,9 +120,9 @@ class Catalog(elements.Document):
         An entity is returned.
         """
         _cls = Entity
-        if 'self' in self and self['self'].endswith('/api/datasets/'):
-            # A Dataset is being created.
-            _cls = pycrunch.datasets.Dataset
+        if 'specification' in self:
+            _cls = EntityClassRegistry.class_for_specification(
+                self['specification']) or Entity
 
         if entity is None:
             entity = _cls(self.session)
