@@ -33,6 +33,37 @@ from .version import __version__
 omitted = object()
 
 
+class EntityClassRegistry(object):
+    """Register custom classes for the different entity types"""
+
+    _registry = {}
+
+    @classmethod
+    def register(cls, entity_type, klass):
+        cls._registry[entity_type] = klass
+
+    @classmethod
+    def instantiate(cls, session, entity):
+        """
+        Instantiate the given entity using the registered class for the
+        entity type. Returns none if no class is available.
+        """
+        if 'specification' in entity:
+            klass = cls.class_for_specification(entity['specification'])
+            if klass is not None:
+                return klass(session, **entity)
+
+    @classmethod
+    def class_for_specification(cls, specification):
+        """
+        Return the class registered for a given specification. The entity
+        type name is the last element in the specification url.
+        """
+        parts = [p for p in specification.split('/') if p.strip() != '']
+        klass = cls._registry.get(parts[-1])
+        return klass
+
+
 class JSONObject(dict):
     """A base class for JSON objects."""
 
