@@ -269,6 +269,9 @@ def isnan(obj):
 def main():
     assert not invalid_credentials()
 
+    # Register the python class for datasets
+    pycrunch.register('datasets', pycrunch.datasets.Dataset)
+
     # Login.
     site = pycrunch.connect(CRUNCH_USER, CRUNCH_PASSWORD, CRUNCH_URL)
     assert isinstance(site, pycrunch.shoji.Catalog)
