@@ -142,11 +142,6 @@ def parse_element(session, j):
         return j
 
 
-def is_dataset(j):
-    parts = j['self'].split('/')
-    return 'datasets' in parts and len(parts) == 7
-
-
 class Document(Element):
     """A base class for complete Documents classified by 'element'.
 
