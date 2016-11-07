@@ -1,6 +1,7 @@
 from unittest import TestCase
 from unittest import mock
 
+import pytest
 from pycrunch.datasets import Dataset
 
 
@@ -139,3 +140,32 @@ class TestCreateCategorical(TestCase):
           }
         }
         assert call == payload
+
+    def test_create_categorical_raises_valueerror(self):
+        sess = mock.MagicMock()
+        ds = Dataset(sess)
+        with pytest.raises(ValueError) as err:
+            categories = [
+                {'id': 2, 'name': 'Normal Users', 'numeric_value': 2, 'missing': False},
+                {'id': 3, 'name': 'Hipsters', 'numeric_value': 3, 'missing': False},
+                {'id': 32767, 'name': 'Unknown', 'numeric_value': None, 'missing': True}
+            ]
+
+            rules = [
+                'operating_system in ("Linux", "Solaris", "Minix", "FreeBSD", "NetBSD")',
+                'operating_system == "Windows"',
+                'operating_system == "MacOS"',
+                'missing(operating_system)'
+            ]
+
+            new_var = ds.create_categorical(
+                categories=categories,
+                rules=rules,
+                name='Operating System Users',
+                alias='operating_system_users',
+                description='Type of Operating System Users'
+            )
+
+        assert str(err.value) == \
+               'Amount of rules should match categories (or categories -1)'
+

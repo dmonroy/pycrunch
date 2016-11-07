@@ -162,7 +162,7 @@ class Dataset(Entity):
         """
         if not ((len(categories) - 1) <= len(rules) <= len(categories)):
             raise ValueError(
-                'Amount of rules should match categories (or categories -1')
+                'Amount of rules should match categories (or categories -1)')
 
         if not hasattr(self, 'variables'):
             self.refresh()

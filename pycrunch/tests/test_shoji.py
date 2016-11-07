@@ -5,10 +5,12 @@ import mock
 from unittest import TestCase
 
 import sys
+
+from pycrunch.elements import ElementSession
 from requests import Response
 
 from pycrunch.progress import DefaultProgressTracking, SimpleTextBarProgressTracking
-from pycrunch.shoji import Catalog, TaskProgressTimeoutError, TaskError
+from pycrunch.shoji import Catalog, TaskProgressTimeoutError, TaskError, Tuple, Entity
 
 
 class TestShojiCreation(TestCase):
@@ -135,3 +137,59 @@ class TestShojiCreation(TestCase):
         # Check we printed the progressbar up to 100%.
         self.assertEqual(''.join(FakeStdout.writes).count('-'),
                          SimpleTextBarProgressTracking.BAR_WIDTH)
+
+    def test_entity_must_fetch(self):
+        sess = mock.MagicMock()
+        t = Tuple(sess, 'http://host.com/something')
+        t.fetch = mock.MagicMock(return_value='fetch result')
+        e = t.entity
+        assert e == 'fetch result'
+
+    def test_edit_entity(self):
+        sess = mock.MagicMock()
+        e = Entity(
+            sess,
+            self='https://host.com/something',
+            name='entity name'
+        )
+        e.edit(name='new entity name')
+
+        call = sess.patch.call_args_list[0]
+        assert call[0][0] == 'https://host.com/something'
+        pl = json.loads(call[0][1])
+        assert pl == {
+            'element': 'shoji:entity',
+            'body': {
+                'name': 'new entity name'
+            }
+        }
+        assert call[1] == {
+            'headers': {
+                'Content-Type': 'application/json'
+            }
+        }
+
+        assert e.body['name'] == 'new entity name'
+
+    def test_replace_entity(self):
+        sess = mock.MagicMock()
+        e = Entity(
+            sess,
+            self='https://host.com/something',
+            name='entity name'
+        )
+        e.replace()
+
+        call = sess.put.call_args_list[0]
+        assert call[0][0] == 'https://host.com/something'
+        assert json.loads(call[0][1]) == {
+            "self": "https://host.com/something",
+            "name": "entity name",
+            "element": "shoji:entity",
+            "body": {}
+        }
+        assert call[1] == {
+            'headers': {
+                'Content-Type': 'application/json'
+            }
+        }

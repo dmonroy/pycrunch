@@ -3,7 +3,7 @@
 from pycrunch import pandaslib
 
 
-def load_ipython_extension(ipython):
+def load_ipython_extension(ipython):  # pragma: no cover
     # TODO: auto-inject the site in builtins drawn from an env var
     # token = ipython.config['InteractiveShellApp'].crunch_token
     # or
@@ -18,6 +18,6 @@ def load_ipython_extension(ipython):
     pass
 
 
-def unload_ipython_extension(ipython):
+def unload_ipython_extension(ipython):  # pragma: no cover
     # If you want your extension to be unloadable, put that logic here.
     pass

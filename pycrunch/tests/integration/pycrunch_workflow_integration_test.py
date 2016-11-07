@@ -215,6 +215,67 @@ DATASET_DOC = {
                         }
                     ],
                     'type': 'multiple_response'
+                },
+                'religion': {
+                    'alias': 'religion',
+                    'categories': [
+                        {
+                            'id': 1,
+                            'missing': False,
+                            'name': 'Protestant',
+                            'numeric_value': 1
+                        },
+                        {
+                            'id': 2,
+                            'missing': False,
+                            'name': 'Catholic',
+                            'numeric_value': 2
+                        },
+                        {
+                            'id': 3,
+                            'missing': False,
+                            'name': 'Jewish',
+                            'numeric_value': 3
+                        },
+                        {
+                            'id': 4,
+                            'missing': False,
+                            'name': 'Muslim',
+                            'numeric_value': 4
+                        },
+                        {
+                            'id': 5,
+                            'missing': False,
+                            'name': 'None',
+                            'numeric_value': 5
+                        },
+                        {
+                            'id': 6,
+                            'missing': False,
+                            'name': 'Other',
+                            'numeric_value': 6
+                        },
+                        {
+                            'id': 32766,
+                            'missing': True,
+                            'name': 'skipped',
+                            'numeric_value': None
+                        },
+                        {
+                            'id': 32767,
+                            'missing': True,
+                            'name': 'not asked',
+                            'numeric_value': None
+                        },
+                        {
+                            'id': -1,
+                            'missing': True,
+                            'name': 'No Data',
+                            'numeric_value': None
+                        }
+                    ],
+                    'name': 'What is your religious preference?',
+                    'type': 'categorical'
                 }
             },
             'order': [
@@ -226,7 +287,8 @@ DATASET_DOC = {
                         'registration_time',
                         'speak_spanish',
                         'hobbies',
-                        'music'
+                        'music',
+                        'religion'
                     ],
                     'group': 'ungrouped'
                 }
@@ -237,19 +299,19 @@ DATASET_DOC = {
 
 # Data
 ROWS = [
-    ['identity', 'ip_address', 'operating_system', 'registration_time', 'speak_spanish', 'hobbies_1', 'hobbies_2', 'hobbies_3', 'hobbies_4', 'music_1', 'music_2', 'music_97', 'music_98', 'music_99'],
-    [1,  '10.0.0.1',  'Linux',   '2014-04-21T10:00:00+00:00', 1,     32767, 32767, 32767, 32767, 2, 2, 1, 2, 2],
-    [2,  '10.0.0.2',  'Solaris', '2014-05-10T00:00:00+00:00', 1,     32766, 1,     1,     4,     1, 1, 1, 2, 2],
-    [3,  '10.0.0.3',  'Linux',   '2015-01-01T00:00:00+00:00', 2,     2,     1,     2,     2,     2, 2, 2, 2, 1],
-    [4,  '10.0.0.4',  'Windows', '2015-01-02T00:00:00+00:00', 3,     4,     3,     2,     1,     1, 2, 1, 2, 2],
-    [5,  '10.0.0.5',  'Windows', '2015-02-01T00:00:00+00:00', 1,     1,     2,     32766, 4,     1, 1, 1, 2, 2],
-    [6,  '10.0.0.6',  'MacOS',   '2015-06-01T00:00:00+00:00', 4,     2,     4,     4,     1,     2, 2, 1, 2, 2],
-    [7,  '10.0.0.7',  'Windows', '2015-12-30T00:00:00+00:00', 32766, 1,     32766, 4,     3,     2, 2, 2, 1, 2],
-    [8,  '10.0.0.8',  'Minix',   '2016-01-01T00:00:00+00:00', 32766, 2,     1,     1,     2,     2, 2, 2, 1, 2],
-    [9,  '10.0.0.9',  'FreeBSD', '2016-02-01T00:00:00+00:00', 32767, 1,     1,     1,     32766, 1, 2, 1, 2, 2],
-    [10, '10.0.0.10', 'NetBSD',  '2015-03-01T00:00:00+00:00', 2,     4,     3,     4,     1,     2, 2, 1, 2, 2],
-    [11, '10.0.0.10', 'NetBSD',  '2015-03-01T00:01:00+00:00', 2,     4,     3,     4,     1,     1, 1, 1, 1, 1],
-    [12, '10.0.0.10', 'NetBSD',  '2015-03-01T00:02:00+00:00', 2,     4,     3,     4,     1,     2, 2, 2, 2, 2],
+    ['identity', 'ip_address', 'operating_system', 'registration_time', 'speak_spanish', 'hobbies_1', 'hobbies_2', 'hobbies_3', 'hobbies_4', 'music_1', 'music_2', 'music_97', 'music_98', 'music_99', 'religion'],
+    [1,  '10.0.0.1',  'Linux',   '2014-04-21T10:00:00+00:00', 1,     32767, 32767, 32767, 32767, 2, 2, 1, 2, 2, 1],
+    [2,  '10.0.0.2',  'Solaris', '2014-05-10T00:00:00+00:00', 1,     32766, 1,     1,     4,     1, 1, 1, 2, 2, 2],
+    [3,  '10.0.0.3',  'Linux',   '2015-01-01T00:00:00+00:00', 2,     2,     1,     2,     2,     2, 2, 2, 2, 1, 3],
+    [4,  '10.0.0.4',  'Windows', '2015-01-02T00:00:00+00:00', 3,     4,     3,     2,     1,     1, 2, 1, 2, 2, 4],
+    [5,  '10.0.0.5',  'Windows', '2015-02-01T00:00:00+00:00', 1,     1,     2,     32766, 4,     1, 1, 1, 2, 2, 5],
+    [6,  '10.0.0.6',  'MacOS',   '2015-06-01T00:00:00+00:00', 4,     2,     4,     4,     1,     2, 2, 1, 2, 2, 6],
+    [7,  '10.0.0.7',  'Windows', '2015-12-30T00:00:00+00:00', 32766, 1,     32766, 4,     3,     2, 2, 2, 1, 2, 32766],
+    [8,  '10.0.0.8',  'Minix',   '2016-01-01T00:00:00+00:00', 32766, 2,     1,     1,     2,     2, 2, 2, 1, 2, 32767],
+    [9,  '10.0.0.9',  'FreeBSD', '2016-02-01T00:00:00+00:00', 32767, 1,     1,     1,     32766, 1, 2, 1, 2, 2, 1],
+    [10, '10.0.0.10', 'NetBSD',  '2015-03-01T00:00:00+00:00', 2,     4,     3,     4,     1,     2, 2, 1, 2, 2, 2],
+    [11, '10.0.0.10', 'NetBSD',  '2015-03-01T00:01:00+00:00', 2,     4,     3,     4,     1,     1, 1, 1, 1, 1, 3],
+    [12, '10.0.0.10', 'NetBSD',  '2015-03-01T00:02:00+00:00', 2,     4,     3,     4,     1,     2, 2, 2, 2, 2, 4],
 ]
 
 
@@ -601,7 +663,15 @@ def main():
             assert row['identity'] in valid_ids
             assert row['hobbies'][0] != 4
 
-        # 1.8 Clear the exclusion filter.
+        # 1.8 Complex exclusion filters (multiple rules)
+        expr = (
+            '(religion != 1 and (not valid(speak_spanish) or speak_spanish >= 1)) '
+            'or (religion == 1 and speak_spanish == 2) '
+            'or (religion == 3 and speak_spanish == 4)'
+        )
+        dataset.exclude(expr)
+
+        # 1.9 Clear the exclusion filter.
         dataset.exclude()
         df = pandaslib.dataframe(dataset)
         assert len(df) == len(ROWS) - 1  # excluding the header

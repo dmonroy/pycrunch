@@ -175,7 +175,7 @@ class Catalog(elements.Document):
         if r.status_code == 202:
             try:
                 progress_url = r.payload['value']
-            except:
+            except:  # pragma: no cover
                 # Not a progress API just return the incomplete entity.
                 # User will refresh it.
                 pass

@@ -40,12 +40,12 @@ class JSONObject(dict):
     def json(self):
         return json.dumps(self, indent=4)
 
-    def __str__(self):
+    def __str__(self):  # pragma: no cover
         return "%s.%s(**%s)" % (self.__module__, self.__class__.__name__,
                                 # __str__ is indented!
                                 json.dumps(self, indent=4))
 
-    def __getattr__(self, key):
+    def __getattr__(self, key):  # pragma: no cover
         # Return the requested attribute if present in self.keys
         v = self.get(key, omitted)
         if v is not omitted:

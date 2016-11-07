@@ -6,6 +6,7 @@ from unittest import mock
 import pytest
 from pycrunch.datasets import Dataset
 from pycrunch.shoji import Tuple, Entity
+from pycrunch.variables import cast
 
 
 class TestExclusionFilters(TestCase):
@@ -84,6 +85,62 @@ class TestExclusionFilters(TestCase):
         }
         assert json.loads(call[1]['data']) == expected_expr_obj
 
+    def dataset_mock(self):
+        vars = dict(
+            disposition=dict(
+                id='0001',
+                alias='disposition',
+                type='numeric',
+                is_subvar=False
+            ),
+            exit_status=dict(
+                id='0002',
+                alias='exit_status',
+                type='numeric',
+                is_subvar=False
+            ),
+        )
+
+        # Mocking setup.
+        def _get(name):
+            def f(*args):
+                return vars[name].get(args[0], args[0])
+            return f
+
+        metadata = {}
+        for alias in vars.keys():
+            v = vars[alias]
+            url = '%svariables/%s/' % (self.ds_url, v['id'])
+            _m = mock.MagicMock()
+            _m.entity.self = url
+            _m.__getitem__.side_effect = _get(alias)
+            _m.get.side_effect = _get(alias)
+            metadata[alias] = _m
+
+        class CrunchPayload(dict):
+            def __getattr__(self, item):
+                if item == 'payload':
+                    return self
+                else:
+                    return self[item]
+
+        def _session_get(*args, **kwargs):
+            if args[0] == '%stable/' % self.ds_url:
+                return CrunchPayload({
+                    'metadata': metadata
+                })
+            return CrunchPayload()
+
+        ds = mock.MagicMock()
+        ds.self = self.ds_url
+        ds.fragments.exclusion = '%sexclusion/' % self.ds_url
+        ds.fragments.table = '%stable/' % self.ds_url
+        ds.__class__ = Dataset
+        ds.exclude = Dataset.exclude
+        ds.session.get.side_effect = _session_get
+
+        return ds
+
     def test_remove_exclusion(self):
         """
         Tests that the proper PATCH request is sent to Crunch in order to
@@ -99,6 +156,523 @@ class TestExclusionFilters(TestCase):
             ds.fragments.exclusion,
             data=json.dumps({'expression': {}})
         )
+
+    def _exclude_payload(self, expr):
+        dataset = self.dataset_mock()
+        dataset.exclude(dataset, expr)
+        call = dataset.session.patch.call_args_list[0]
+        return json.loads(call[1]['data'])
+
+    def test_gt(self):
+        urld = '%svariables/%s/' % (self.ds_url, '0001')
+        data = self._exclude_payload('disposition > 5')
+        expected_expr_obj = {
+            'expression': {
+                'function': '>',
+                'args': [
+                    {'variable': urld},
+                    {'value': 5}
+                ]
+            }
+        }
+        assert data == expected_expr_obj
+
+    def test_in(self):
+        data = self._exclude_payload('disposition in [32766]')
+        expected_expr_obj = {
+            "expression": {
+                "function": "in",
+                "args": [
+                    {"variable": "http://test.crunch.io/api/datasets/123/variables/0001/"},
+                    {"value": [32766]}
+                ]
+            }
+        }
+
+        assert data == expected_expr_obj
+
+    def test_in_nultiple(self):
+        data = self._exclude_payload('disposition in (32766, 32767)')
+        expected_expr_obj = {
+            "expression": {
+                "function": "in",
+                "args": [
+                    {"variable": "http://test.crunch.io/api/datasets/123/variables/0001/"},
+                    {"value": [32766, 32767]}
+                ]
+            }
+        }
+
+        assert data == expected_expr_obj
+
+    def test_not_and(self):
+        data = self._exclude_payload('not (disposition in (1, 2) and exit_status == 0)')
+        expected_expr_obj = {
+            "expression": {
+                "function": "not",
+                "args": [
+                    {
+                        "function": "and",
+                        "args": [
+                            {
+                                "function": "in",
+                                "args": [
+                                    {
+                                        "variable": "http://test.crunch.io/api/datasets/123/variables/0001/"
+                                    },
+                                    {
+                                        "value": [
+                                            1,
+                                            2
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "function": "==",
+                                "args": [
+                                    {
+                                        "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                                    },
+                                    {
+                                        "value": 0
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+
+        assert data == expected_expr_obj
+
+    def test_has_any(self):
+        data = self._exclude_payload('exit_status.has_any([32766])')
+        expected_expr_obj = {
+            "expression": {
+                "function": "any",
+                "args": [
+                    {
+                        "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                    },
+                    {
+                        "value": [
+                            32766
+                        ]
+                    }
+                ]
+            }
+        }
+
+        assert data == expected_expr_obj
+
+    def test_not_has_any(self):
+        data = self._exclude_payload('not exit_status.has_any([32766])')
+        expected_expr_obj = {
+            "expression": {
+                "function": "not",
+                "args": [
+                    {
+                        "function": "any",
+                        "args": [
+                            {
+                                "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                            },
+                            {
+                                "value": [
+                                    32766
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+
+        assert data == expected_expr_obj
+
+    def test_has_any_multiple(self):
+        data = self._exclude_payload('exit_status.has_any([32766, 32767])')
+        expected_expr_obj = {
+            "expression": {
+                "function": "any",
+                "args": [
+                    {
+                        "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                    },
+                    {
+                        "value": [
+                            32766,
+                            32767
+                        ]
+                    }
+                ]
+            }
+        }
+
+        assert data == expected_expr_obj
+
+    def test_has_all(self):
+        data = self._exclude_payload('exit_status.has_all([32767])')
+        expected_expr_obj = {
+            "expression": {
+                "args": [
+                    {
+                        "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                    },
+                    {
+                        "value": [
+                            32767
+                        ]
+                    }
+                ],
+                "function": "all"
+            }
+        }
+
+        assert data == expected_expr_obj
+
+    def test_not_has_all(self):
+        data = self._exclude_payload('not exit_status.has_all([32767])')
+        expected_expr_obj = {
+            "expression": {
+                "function": "not",
+                "args": [
+                    {
+                        "function": "all",
+                        "args": [
+                            {
+                                "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                            },
+                            {
+                                "value": [
+                                    32767
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+
+        assert data == expected_expr_obj
+
+    def test_has_all_or_has_all(self):
+        data = self._exclude_payload('exit_status.has_all([1]) or exit_status.has_all([2])')
+        expected_expr_obj = {
+            "expression": {
+                "args": [
+                    {
+                        "args": [
+                            {
+                                "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                            },
+                            {
+                                "value": [
+                                    1
+                                ]
+                            }
+                        ],
+                        "function": "all"
+                    },
+                    {
+                        "args": [
+                            {
+                                "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                            },
+                            {
+                                "value": [
+                                    2
+                                ]
+                            }
+                        ],
+                        "function": "all"
+                    }
+                ],
+                "function": "or"
+            }
+        }
+
+        assert data == expected_expr_obj
+
+    def test_not_has_all_or_has_all(self):
+        data = self._exclude_payload('not(exit_status.has_all([1]) or exit_status.has_all([2]))')
+        expected_expr_obj = {
+            "expression": {
+                "function": "not",
+                "args": [
+                    {
+                        "args": [
+                            {
+                                "args": [
+                                    {
+                                        "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                                    },
+                                    {
+                                        "value": [
+                                            1
+                                        ]
+                                    }
+                                ],
+                                "function": "all"
+                            },
+                            {
+                                "args": [
+                                    {
+                                        "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                                    },
+                                    {
+                                        "value": [
+                                            2
+                                        ]
+                                    }
+                                ],
+                                "function": "all"
+                            }
+                        ],
+                        "function": "or"
+                    }
+                ]
+            }
+        }
+
+        assert data == expected_expr_obj
+
+    def test_duplicates(self):
+        data = self._exclude_payload('exit_status.duplicates()')
+        expected_expr_obj = {
+            "expression": {
+                "function": "duplicates",
+                "args": [
+                    {
+                        "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                    }
+                ]
+            }
+        }
+
+        assert data == expected_expr_obj
+
+    def test_valid(self):
+        data = self._exclude_payload('valid(exit_status)')
+        expected_expr_obj = {
+            "expression": {
+                "function": "is_valid",
+                "args": [
+                    {
+                        "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                    }
+                ]
+            }
+        }
+
+        assert data == expected_expr_obj
+
+    def test_not_valid(self):
+        data = self._exclude_payload('not valid(exit_status)')
+        expected_expr_obj = {
+            "expression": {
+                "args": [
+                    {
+                        "args": [
+                            {
+                                "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                            }
+                        ],
+                        "function": "is_valid"
+                    }
+                ],
+                "function": "not"
+            }
+        }
+
+        assert data == expected_expr_obj
+
+    def test_missing(self):
+        data = self._exclude_payload('missing(exit_status)')
+        expected_expr_obj = {
+            "expression": {
+                "args": [
+                    {
+                        "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                    }
+                ],
+                "function": "is_missing"
+            }
+        }
+
+        assert data == expected_expr_obj
+
+    def test_not_missing(self):
+        data = self._exclude_payload('not missing(exit_status)')
+        expected_expr_obj = {
+            "expression": {
+                "function": "not",
+                "args": [
+                    {
+                        "function": "is_missing",
+                        "args": [
+                            {
+                                "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+
+        assert data == expected_expr_obj
+
+    def test_equal(self):
+        data = self._exclude_payload('exit_status == 1')
+        expected_expr_obj = {
+            "expression": {
+                "args": [
+                    {
+                        "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                    },
+                    {
+                        "value": 1
+                    }
+                ],
+                "function": "=="
+            }
+        }
+
+        assert data == expected_expr_obj
+
+    def test_nested(self):
+        data = self._exclude_payload('(disposition != 1 and (not valid(exit_status) or exit_status >= 1)) or (disposition == 0 and exit_status == 0) or (disposition == 0 and exit_status == 1)')
+        expected_expr_obj = {
+            "expression": {
+                "args": [
+                    {
+                        "args": [
+                            {
+                                "args": [
+                                    {
+                                        "variable": "http://test.crunch.io/api/datasets/123/variables/0001/"
+                                    },
+                                    {
+                                        "value": 1
+                                    }
+                                ],
+                                "function": "!="
+                            },
+                            {
+                                "args": [
+                                    {
+                                        "args": [
+                                            {
+                                                "args": [
+                                                    {
+                                                        "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                                                    }
+                                                ],
+                                                "function": "is_valid"
+                                            }
+                                        ],
+                                        "function": "not"
+                                    },
+                                    {
+                                        "args": [
+                                            {
+                                                "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                                            },
+                                            {
+                                                "value": 1
+                                            }
+                                        ],
+                                        "function": ">="
+                                    }
+                                ],
+                                "function": "or"
+                            }
+                        ],
+                        "function": "and"
+                    },
+                    {
+                        "args": [
+                            {
+                                "args": [
+                                    {
+                                        "args": [
+                                            {
+                                                "variable": "http://test.crunch.io/api/datasets/123/variables/0001/"
+                                            },
+                                            {
+                                                "value": 0
+                                            }
+                                        ],
+                                        "function": "=="
+                                    },
+                                    {
+                                        "args": [
+                                            {
+                                                "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                                            },
+                                            {
+                                                "value": 0
+                                            }
+                                        ],
+                                        "function": "=="
+                                    }
+                                ],
+                                "function": "and"
+                            },
+                            {
+                                "args": [
+                                    {
+                                        "args": [
+                                            {
+                                                "variable": "http://test.crunch.io/api/datasets/123/variables/0001/"
+                                            },
+                                            {
+                                                "value": 0
+                                            }
+                                        ],
+                                        "function": "=="
+                                    },
+                                    {
+                                        "args": [
+                                            {
+                                                "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                                            },
+                                            {
+                                                "value": 1
+                                            }
+                                        ],
+                                        "function": "=="
+                                    }
+                                ],
+                                "function": "and"
+                            }
+                        ],
+                        "function": "or"
+                    }
+                ],
+                "function": "or"
+            }
+        }
+
+        assert data == expected_expr_obj
+
+    def test_dict_expr(self):
+        expr = {
+            "args": [
+                {
+                    "variable": "http://test.crunch.io/api/datasets/123/variables/0002/"
+                },
+                {
+                    "value": 1
+                }
+            ],
+            "function": "=="
+        }
+        data = self._exclude_payload(expr)
+        expected_expr_obj = {'expression': expr}
+        assert data == expected_expr_obj
 
 
 class TestVariables(TestCase):
@@ -120,3 +694,21 @@ class TestVariables(TestCase):
             dataset.another_variable
 
         assert str(err.value) == 'Dataset has no attribute another_variable'
+
+    def test_variable_cast(self):
+        variable = mock.MagicMock()
+        cast(
+            variable,
+            type='numeric',
+            offset='offset',
+            resolution='resolution',
+            format='format'
+        )
+        call = variable.cast.post.call_args_list[0]
+        data = json.loads(call[1]['data'])
+        assert data == {
+            'cast_as': 'numeric',
+            'resolution': 'resolution',
+            'offset': 'offset',
+            'format': 'format'
+        }

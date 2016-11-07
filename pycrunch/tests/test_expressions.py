@@ -8,6 +8,147 @@ from pycrunch.datasets import process_expr
 
 class TestExpressionParsing(TestCase):
 
+    def test_in_value_error(self):
+        expr = "age in [{}, 1, 2]"
+        with pytest.raises(ValueError) as err:
+            parse_expr(expr)
+
+    def test_invalid_method_value_error(self):
+        expr = "age.invalid_method(1)"
+        with pytest.raises(ValueError) as err:
+            parse_expr(expr)
+
+    def test_duplicates_value_error(self):
+        expr = "age.duplicates(1)"  # duplicates doesn't accepts parameters
+        with pytest.raises(ValueError) as err:
+            parse_expr(expr)
+
+    def test_has_any_value_error(self):
+        expr = "age.has_any(1,2)"
+        with pytest.raises(ValueError) as err:
+            parse_expr(expr)
+
+    def test_is_valid_value_error(self):
+        expr = "age.is_valid(1)"
+        with pytest.raises(ValueError) as err:
+            parse_expr(expr)
+
+    def test_is_missing_value_error(self):
+        expr = "age.is_missing(1)"
+        with pytest.raises(ValueError) as err:
+            parse_expr(expr)
+
+    def test_is_missing_arrays(self):
+        expr = "age.is_missing([1], [2])"
+        with pytest.raises(ValueError) as err:
+            parse_expr(expr)
+
+    def test_unknown_function(self):
+        expr = "other()"
+        with pytest.raises(ValueError) as err:
+            parse_expr(expr)
+
+    def test_wrong_ops(self):
+        expr = "a == 1 == 1"
+        with pytest.raises(ValueError) as err:
+            parse_expr(expr)
+
+    def test_unsupported_args(self):
+        expr = "valid(starargs=1)"
+        with pytest.raises(ValueError) as err:
+            parse_expr(expr)
+
+    def test_expr_none(self):
+        expr = None
+        result = parse_expr(expr)
+        assert result == {}
+
+    def test_process_nested(self):
+        expr = '(identity == 1 and caseid <= surveyid) or identity >= 2'
+        vars = {
+            '0001': {
+                'alias': 'identity',
+                'type': 'numeric'
+            },
+            '0002': {
+                'alias': 'caseid',
+                'type': 'numeric'
+            },
+            '0003': {
+                'alias': 'surveyid',
+                'type': 'numeric'
+            },
+        }
+
+        obj = parse_expr(expr)
+        ds = mock.MagicMock()
+
+        def _get(*args, **kwargs):
+            r = mock.MagicMock()
+            r.payload.metadata = vars
+            return r
+        ds.session.get.side_effect = _get
+        ds.self = 'http://host.com/api/datasets/abc123/'
+        result = process_expr(obj, ds)
+        assert result == {
+            'function': 'or',
+            'args': [
+                {
+                    'function': 'and',
+                    'args': [
+                        {
+                            'function': '==',
+                            'args': [
+                                {'variable': 'http://host.com/api/datasets/abc123/variables/0001/'},
+                                {'value': 1}
+                            ]
+                        },
+                        {
+                            'function': '<=',
+                            'args': [
+                                {'variable': 'http://host.com/api/datasets/abc123/variables/0002/'},
+                                {'variable': 'http://host.com/api/datasets/abc123/variables/0003/'}
+                            ]
+                        }
+                    ]
+                },
+                {
+                    'function': '>=',
+                    'args': [
+                        {'variable': 'http://host.com/api/datasets/abc123/variables/0001/'},
+                        {'value': 2}
+                    ]
+                }
+            ]
+        }
+
+    def test_process_invalid_variable(self):
+        expr = '(identity == 1 and caseid <= surveyid) or identity >= 2'
+        vars = {
+            '0001': {
+                'alias': 'identity',
+                'type': 'numeric'
+            },
+            '0002': {
+                'alias': 'caseid',
+                'type': 'numeric'
+            }
+        }
+
+        obj = parse_expr(expr)
+        ds = mock.MagicMock()
+
+        def _get(*args, **kwargs):
+            r = mock.MagicMock()
+            r.payload.metadata = vars
+            return r
+        ds.session.get.side_effect = _get
+        ds.self = 'http://host.com/api/datasets/abc123/'
+        with pytest.raises(ValueError) as err:
+            process_expr(obj, ds)
+
+        assert str(err.value) == "Invalid variable alias 'surveyid'"
+
     def test_parse_equal_int(self):
         expr = "age == 1"
         expr_obj = parse_expr(expr)
