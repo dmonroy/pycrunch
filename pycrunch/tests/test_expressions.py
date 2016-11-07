@@ -2096,6 +2096,7 @@ class TestExpressionProcessing(TestCase):
                 }
             ]
         }
+
 class TestExpressionPrettify(TestCase):
 
     def test_simple_eq(self):
@@ -2112,5 +2113,38 @@ class TestExpressionPrettify(TestCase):
         }
 
         expected = 'age == 1'
+        cel = prettify(expr)
+        assert expected == cel
+
+    def test_and(self):
+        expr = {
+            'function': 'and',
+            'args': [
+                {
+                    'function': '>',
+                    'args': [
+                        {
+                            'variable': 'age'
+                        },
+                        {
+                            'value': 1
+                        }
+                    ]
+                },
+                {
+                    'function': '==',
+                    'args': [
+                        {
+                            'variable': 'favcolor'
+                        },
+                        {
+                            'value': 2
+                        }
+                    ]
+                }
+            ]
+        }
+
+        expected = 'age > 1 and favcolor == 2'
         cel = prettify(expr)
         assert expected == cel
