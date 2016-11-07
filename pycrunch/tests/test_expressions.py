@@ -2199,3 +2199,68 @@ class TestExpressionPrettify(TestCase):
         cel = prettify(expr)
         assert expected == cel
 
+    def test_complex(self):
+        expr = {
+            'function': 'and',
+            'args': [
+                {
+                    'function': '>',
+                    'args': [
+                        {
+                            'variable': 'age'
+                        },
+                        {
+                            'value': 55
+                        }
+                    ]
+                },
+                {
+                    'function': 'or',
+                    'args': [
+                        {
+                            'function': 'and',
+                            'args': [
+                                {
+                                    'function': '==',
+                                    'args': [
+                                        {
+                                            'variable': 'genre'
+                                        },
+                                        {
+                                            'value': 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    'function': '==',
+                                    'args': [
+                                        {
+                                            'variable': 'favfruit'
+                                        },
+                                        {
+                                            'value': 9
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            'function': 'in',
+                            'args': [
+                                {
+                                    'variable': 'favcolor'
+                                },
+                                {
+                                    'value': [3, 4, 5]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+
+        expected = 'age > 55 and ((genre == 1 and favfruit == 9) or favcolor in [3, 4, 5])'
+        cel = prettify(expr)
+        assert expected == cel
+
