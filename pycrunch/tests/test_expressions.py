@@ -2148,3 +2148,54 @@ class TestExpressionPrettify(TestCase):
         expected = 'age > 1 and favcolor == 2'
         cel = prettify(expr)
         assert expected == cel
+
+    def test_nested_or(self):
+        expr = {
+            'function': 'and',
+            'args': [
+                {
+                    'function': '>',
+                    'args': [
+                        {
+                            'variable': 'age'
+                        },
+                        {
+                            'value': 1
+                        }
+                    ]
+                },
+                {
+                    'function': 'or',
+                    'args': [
+
+                        {
+                            'function': '==',
+                            'args': [
+                                {
+                                    'variable': 'favcolor'
+                                },
+                                {
+                                    'value': 2
+                                }
+                            ]
+                        },
+                        {
+                            'function': '==',
+                            'args': [
+                                {
+                                    'variable': 'genre'
+                                },
+                                {
+                                    'value': 1
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+
+        expected = 'age > 1 and (favcolor == 2 or genre == 1)'
+        cel = prettify(expr)
+        assert expected == cel
+
