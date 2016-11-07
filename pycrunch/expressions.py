@@ -43,6 +43,55 @@ ready for the crunch API.
 import ast
 import copy
 
+CRUNCH_FUNC_MAP = {
+    'valid': 'is_valid',
+    'missing': 'is_missing',
+}
+
+CRUNCH_METHOD_MAP = {
+    'has_any': 'any',
+    'has_all': 'all',
+    'duplicates': 'duplicates',
+    'has_count': 'has_count',
+}
+
+# according to http://docs.crunch.io/#function-terms
+BINARY_FUNC_OPERATORS = [
+    '+',
+    '-',
+    '*',
+    '/',
+    '//',
+    '^',
+    '%',
+    '&',
+    '|',
+    '~',
+]
+
+COMPARISSON_OPERATORS = [
+    '==',
+    '!=',
+    '=><=',
+    '<',
+    '>',
+    '<=',
+    '=>',
+    '~=',
+    'in',
+    'and',
+    'or',
+    'not',
+]
+
+COMPARISSON_FUNCS = [
+
+    # 'between',
+    'all',
+    'any',
+]
+
+BUILTIN_FUNCTIONS = []
 
 NOT_IN = object()
 
@@ -66,18 +115,6 @@ def _nest(args, func):
 
 
 def parse_expr(expr):
-
-    crunch_func_map = {
-        'valid': 'is_valid',
-        'missing': 'is_missing'
-    }
-
-    crunch_method_map = {
-        'has_any': 'any',
-        'has_all': 'all',
-        'duplicates': 'duplicates',
-        'has_count': 'has_count'
-    }
 
     def _parse(node, parent=None):
         obj = {}
@@ -145,10 +182,10 @@ def parse_expr(expr):
 
                 # The 'method'.
                 method = fields[1][1]
-                if method not in crunch_method_map.keys():
+                if method not in CRUNCH_METHOD_MAP.keys():
                     raise ValueError
 
-                return _id, crunch_method_map[method]
+                return _id, CRUNCH_METHOD_MAP[method]
 
             # "Non-terminal" nodes.
             else:
@@ -193,9 +230,9 @@ def parse_expr(expr):
                         func_type = 'function'
                         setattr(_val, '_func_type', func_type)
                         _id = _parse(_val, parent=node)
-                        if _id not in crunch_func_map.keys():
+                        if _id not in CRUNCH_FUNC_MAP.keys():
                             raise ValueError
-                        op = crunch_func_map[_id]
+                        op = CRUNCH_FUNC_MAP[_id]
                     elif _name == 'ops':
                         if len(_val) != 1:
                             raise ValueError
@@ -251,7 +288,7 @@ def parse_expr(expr):
                                 }
                             ]
                         }
-                    elif op in crunch_func_map.values() \
+                    elif op in CRUNCH_FUNC_MAP.values() \
                             and isinstance(args, list) and len(args) > 1:
                         obj = {
                             'function': 'and',
@@ -267,7 +304,7 @@ def parse_expr(expr):
                     if op is NOT_IN:
                         # Special treatment for the args in a `not in` expr.
                         obj['args'][0]['args'] = args
-                    elif op in crunch_func_map.values() \
+                    elif op in CRUNCH_FUNC_MAP.values() \
                             and isinstance(args, list) and len(args) > 1:
                         for arg in args:
                             obj['args'].append(
@@ -431,3 +468,50 @@ def process_expr(obj, ds):
         ]
     else:
         return _process(copy.deepcopy(obj), variables)
+
+
+def prettify(expr):
+    """
+    Translate the crunch expression dictionary to the string representation.
+
+    :param expr: crunch expression
+    :return: string representation of the expression
+    """
+    assert isinstance(expr, dict), "Dictionary is expected"
+
+    operators = BINARY_FUNC_OPERATORS + COMPARISSON_OPERATORS
+    methods = {m[1]: m[0] for m in CRUNCH_METHOD_MAP.items()}
+
+    def _transform(f, args, nest=False):
+        result = ''
+        if f in operators:
+            op = ' %s ' % f
+            result = op.join(str(x) for x in args)
+        elif f in methods:
+            result = '%s.%s(%s)' % (
+                args[0], methods[f], ', '.join(str(x) for x in args[1:])
+            )
+        if nest:
+            result = '(%s)' % result
+
+        return result
+
+    def _process(fragment, parent=None):
+        _func = fragment.get('function')
+        if _func is None:
+            return list(fragment.values())[0]
+
+        args = [_process(arg, _func) for arg in fragment['args']]
+        child_functions = [
+            arg.get('function')
+            for arg in fragment['args'] if arg.get('function') is not None
+        ]
+        has_child_and_or = 'or' in child_functions
+        nest = parent is not None and (
+            has_child_and_or
+            or (parent == 'or' and len(child_functions)>1)
+            or _func == 'or'
+        )
+        return _transform(_func, args, nest=nest)
+
+    return _process(expr)
