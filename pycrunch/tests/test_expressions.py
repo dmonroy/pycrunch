@@ -4,6 +4,7 @@ from unittest import TestCase
 
 from pycrunch.datasets import parse_expr
 from pycrunch.datasets import process_expr
+from pycrunch.expressions import prettify
 
 
 class TestExpressionParsing(TestCase):
@@ -2095,3 +2096,21 @@ class TestExpressionProcessing(TestCase):
                 }
             ]
         }
+class TestExpressionPrettify(TestCase):
+
+    def test_simple_eq(self):
+        expr = {
+            'function': '==',
+            'args': [
+                {
+                    'variable': 'age'
+                },
+                {
+                    'value': 1
+                }
+            ]
+        }
+
+        expected = 'age == 1'
+        cel = prettify(expr)
+        assert expected == cel
