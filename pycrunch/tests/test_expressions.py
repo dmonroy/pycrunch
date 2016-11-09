@@ -1245,6 +1245,63 @@ class TestExpressionParsing(TestCase):
             ]
         }
 
+    def test_parse_not_a_in_b(self):
+        expr = "a not in [1, 2, 3]"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': 'in',
+                    'args': [
+                        {
+                            'variable': 'a'
+                        },
+                        {
+                            'value': [1, 2, 3]
+                        }
+                    ]
+                }
+            ]
+        }
+
+        expr = "not a in [1, 2, 3]"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': 'in',
+                    'args': [
+                        {
+                            'variable': 'a'
+                        },
+                        {
+                            'value': [1, 2, 3]
+                        }
+                    ]
+                }
+            ]
+        }
+
+        expr = "not (a in [1, 2, 3])"
+        expr_obj = parse_expr(expr)
+        assert expr_obj == {
+            'function': 'not',
+            'args': [
+                {
+                    'function': 'in',
+                    'args': [
+                        {
+                            'variable': 'a'
+                        },
+                        {
+                            'value': [1, 2, 3]
+                        }
+                    ]
+                }
+            ]
+        }
 
 # 'diposition code 0 (incompletes)':
 # intersection(
