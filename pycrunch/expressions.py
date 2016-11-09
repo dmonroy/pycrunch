@@ -78,7 +78,7 @@ COMPARISSON_OPERATORS = [
     '<',
     '>',
     '<=',
-    '=>',
+    '>=',
     '~=',
     'in',
     'and',
