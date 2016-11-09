@@ -528,6 +528,9 @@ def prettify(expr, ds=None):
             result = '%s.%s(%s)' % (
                 args[0], methods[f], ', '.join(str(x) for x in args[1:])
             )
+        else:
+            raise Exception('Unknown function "%s"' % f)
+
         if nest:
             result = '(%s)' % result
 
