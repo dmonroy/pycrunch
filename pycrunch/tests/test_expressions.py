@@ -1,3 +1,4 @@
+import pycrunch
 import pytest
 from unittest import mock
 from unittest import TestCase
@@ -2097,6 +2098,7 @@ class TestExpressionProcessing(TestCase):
             ]
         }
 
+
 class TestExpressionPrettify(TestCase):
 
     def test_simple_eq(self):
@@ -2264,3 +2266,48 @@ class TestExpressionPrettify(TestCase):
         cel = prettify(expr)
         assert expected == cel
 
+    def test_variable_url(self):
+        expr = {
+            'function': '==',
+            'args': [
+                {
+                    'variable': 'https://host.com/api/datasets/123/variables/001/'
+                },
+                {
+                    'value': 1
+                }
+            ]
+        }
+
+        ds = mock.MagicMock()
+        ds.__class__ = pycrunch.datasets.Dataset
+        response = mock.MagicMock()
+        response.payload.body.alias = 'age'
+
+        ds.session.get.side_effect = lambda *arg: response
+
+        expected = 'age == 1'
+        cel = prettify(expr, ds)
+        assert expected == cel
+        ds.session.get.assert_called_with('https://host.com/api/datasets/123/variables/001/')
+
+    def test_variable_url_no_dataset(self):
+        expr = {
+            'function': '==',
+            'args': [
+                {
+                    'variable': 'https://host.com/api/datasets/123/variables/001/'
+                },
+                {
+                    'value': 1
+                }
+            ]
+        }
+
+        with pytest.raises(Exception) as err:
+            prettify(expr)
+
+        assert str(err.value) == (
+            'Valid dataset instance is required to resolve variable urls '
+            'in the expression'
+        )

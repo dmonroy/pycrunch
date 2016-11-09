@@ -470,17 +470,49 @@ def process_expr(obj, ds):
         return _process(copy.deepcopy(obj), variables)
 
 
-def prettify(expr):
+def prettify(expr, ds=None):
     """
     Translate the crunch expression dictionary to the string representation.
 
     :param expr: crunch expression
+    :param ds: dataset instance
     :return: string representation of the expression
     """
     assert isinstance(expr, dict), "Dictionary is expected"
 
     operators = BINARY_FUNC_OPERATORS + COMPARISSON_OPERATORS
     methods = {m[1]: m[0] for m in CRUNCH_METHOD_MAP.items()}
+
+    def _resolve_variable(var):
+        is_url = validate_variable_url(var)
+
+        if not is_url:
+            return var
+        elif not isinstance(ds, pycrunch.datasets.Dataset):
+            raise Exception(
+                'Valid dataset instance is required to resolve variable urls '
+                'in the expression'
+            )
+        return ds.session.get(var).payload.body.alias
+
+    def _resolve_variables(_expr):
+        new_expr = dict(
+            function=_expr['function'],
+            args=[]
+        )
+        for arg in _expr['args']:
+            if 'function' in arg:
+                # arg is a function, resolve inner variables
+                new_expr['args'].append(_resolve_variables(arg))
+            elif 'variable' in arg:
+                # arg is a variable, resolve
+                new_expr['args'].append(
+                    {'variable': _resolve_variable(arg['variable'])}
+                )
+            else:
+                # arg is neither a variable or function, pass as is
+                new_expr['args'].append(arg)
+        return new_expr
 
     def _transform(f, args, nest=False):
         result = ''
@@ -514,4 +546,4 @@ def prettify(expr):
         )
         return _transform(_func, args, nest=nest)
 
-    return _process(expr)
+    return _process(_resolve_variables(expr))
