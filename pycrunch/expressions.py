@@ -519,8 +519,11 @@ def prettify(expr, ds=None):
     def _transform(f, args, nest=False):
         result = ''
         if f in operators:
-            op = ' %s ' % f
-            result = op.join(str(x) for x in args)
+            if len(args) == 1:
+                result = '%s %s' % (f, args[0])
+            else:
+                op = ' %s ' % f
+                result = op.join(str(x) for x in args)
         elif f in methods:
             result = '%s.%s(%s)' % (
                 args[0], methods[f], ', '.join(str(x) for x in args[1:])
