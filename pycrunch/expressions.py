@@ -43,6 +43,8 @@ ready for the crunch API.
 import ast
 import copy
 
+import pycrunch
+from pycrunch.variables import validate_variable_url
 CRUNCH_FUNC_MAP = {
     'valid': 'is_valid',
     'missing': 'is_missing',
