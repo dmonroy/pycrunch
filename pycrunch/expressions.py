@@ -570,7 +570,7 @@ def prettify(expr, ds=None):
         has_child_and_or = 'or' in child_functions
         nest = parent is not None and (
             has_child_and_or
-            or (parent == 'or' and len(child_functions)>1)
+            or (parent == 'or' and len(child_functions) > 1)
             or _func == 'or'
         )
         return _transform(_func, args, nest=nest)
