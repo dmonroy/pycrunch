@@ -44,7 +44,9 @@ import ast
 import copy
 
 import pycrunch
+import six
 from pycrunch.variables import validate_variable_url
+
 CRUNCH_FUNC_MAP = {
     'valid': 'is_valid',
     'missing': 'is_missing',
@@ -536,9 +538,28 @@ def prettify(expr, ds=None):
 
         return result
 
+    def _quote_value(v):
+        # escape the quotes from the string, also escape the backslash
+        return "'{}'".format(
+            v.replace("\\", "\\\\").replace("\'", "\\\'")
+        )
+
     def _process(fragment, parent=None):
         _func = fragment.get('function')
+
         if _func is None:
+            # This is not a function, but a plain argument
+
+            if 'value' in fragment:
+                # This argument is a value, not a variable
+                value = fragment['value']
+
+                if isinstance(value, six.string_types):
+                    # Must escape single-quote from string value
+                    value = _quote_value(value)
+
+                return value
+
             return list(fragment.values())[0]
 
         args = [_process(arg, _func) for arg in fragment['args']]
