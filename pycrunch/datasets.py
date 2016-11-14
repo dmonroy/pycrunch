@@ -1,6 +1,11 @@
 import json
+
 import six
 
+if six.PY2:  # pragma: no cover
+    from urlparse import urlsplit
+else:
+    from urllib.parse import urlsplit
 from pycrunch.expressions import parse_expr
 from pycrunch.expressions import process_expr
 from pycrunch.shoji import Entity
@@ -266,3 +271,46 @@ class Dataset(Entity):
             }
         ]
         return self.variables.create(payload)
+
+    def change_current_editor(self, user):
+        """
+        Change the current editor of the Crunch dataset.
+
+        Parameters
+        ----------
+        user : str
+            The email address or the crunch url of the user who should be set
+            as the new current editor of the given dataset.
+
+        Returns
+        -------
+        None
+        """
+
+        def _host_from_url(url):
+            resolved = urlsplit(url)
+            return resolved.hostname
+
+        def _to_url(email):
+            api_users = 'https://{}/api/users/'.format(
+                _host_from_url(self.self)
+            )
+            user_url = None
+
+            users = self.session.get(api_users).payload['index']
+
+            for url, user in six.iteritems(users):
+                if user['email'] == email:
+                    user_url = url
+                    self.patch({'current_editor': url})
+                    break
+            assert user_url is not None, 'Unable to resolve user url'
+
+            return user_url
+
+        def _is_url(u):
+            return u.startswith('https://') or u.startswith('http://')
+
+        user_url = user if _is_url(user) else _to_url(user)
+
+        self.patch({'current_editor': user_url})

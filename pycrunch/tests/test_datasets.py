@@ -712,3 +712,46 @@ class TestVariables(TestCase):
             'offset': 'offset',
             'format': 'format'
         }
+
+
+class TestCurrentEditor(TestCase):
+    ds_url = 'https://test.crunch.io/api/datasets/123456/'
+    user_url = 'https://test.crunch.io/api/users/12345/'
+
+    def test_change_current_editor(self):
+        body = {
+            'self': self.ds_url,
+            'name': 'Dataset Name'
+        }
+        sess = mock.MagicMock()
+        ds = Dataset(session=sess, body=body)
+        ds.patch = mock.MagicMock()
+        ds.change_current_editor(self.user_url)
+
+        ds.patch.assert_called_with({
+            'current_editor': self.user_url
+        })
+
+    def test_change_current_editor_email(self):
+        sess = mock.MagicMock()
+        response = mock.MagicMock()
+        response.payload = {
+            'index': {
+                self.user_url: {
+                    'email': 'jane.doe@crunch.io'
+                }
+            }
+        }
+
+        def _get(*args, **kwargs):
+            return response
+
+        sess.get.side_effect = _get
+        ds = Dataset(session=sess)
+        ds.self = self.ds_url
+        ds.patch = mock.MagicMock()
+        ds.change_current_editor('jane.doe@crunch.io')
+
+        ds.patch.assert_called_with({
+            'current_editor': self.user_url
+        })
