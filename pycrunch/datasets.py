@@ -394,3 +394,85 @@ class Dataset(Entity):
             ]
 
             return attribs
+
+    def fork(self, description=None, name=None, is_published=False, **kwargs):
+        """
+        Create a fork of ds and add virgin savepoint.
+
+        Parameters
+        ----------
+        description : str, default=None
+            If given, the description to be applied to the fork. If not
+            given the description will be copied from ds.
+        name : str, default=None
+            If given, the name to be applied to the fork. If not given a
+            default name will be created which numbers the fork based on
+            how many other forks there are on ds.
+        is_published : bool, default=False
+            If True, the fork will be visible to viewers of ds. If False it
+            will only be viewable to editors of ds.
+
+        Returns
+        -------
+        _fork : pycrunch.datasets.Dataset
+            The forked dataset.
+        """
+
+        nforks = len(self.forks.index)
+        if name is None:
+            name = "FORK #{} of {}".format(nforks + 1, self.body.name)
+        if description is None:
+            description = self.body.description
+
+        body = dict(
+            name=name,
+            description=description,
+            is_published=is_published,
+            **kwargs
+        )
+        # not returning a dataset
+        _fork = self.forks.create({"body": body}).refresh()
+        _fork.create_savepoint("initial fork")
+
+        return _fork
+
+    def forks_dataframe(self):
+        """
+        Return a dataframe summarizing the forks on the dataset.
+
+        Returns
+        -------
+        _forks : pandas.DataFrame
+            A DataFrame representation of all attributes from all forks
+            on the given dataset.
+        """
+
+        if len(self.forks.index) == 0:
+            return None
+        else:
+            _forks = pd.DataFrame(
+                [fk for url, fk in six.iteritems(self.forks.index)]
+            )
+            _forks = _forks[[
+                'name',
+                'description',
+                'is_published',
+                'owner_name',
+                'current_editor_name',
+                'creation_time',
+                'modification_time',
+                'id'
+            ]]
+            _forks['creation_time'] = pd.to_datetime(_forks['creation_time'])
+            _forks['modification_time'] = pd.to_datetime(_forks['modification_time'])
+            _forks.sort(columns='creation_time', inplace=True)
+
+            return _forks
+
+    def delete_forks(self):
+        """
+        Deletes all the forks on the dataset. CANNOT BE UNDONE!
+        """
+
+        for fork in six.itervalues(self.forks.index):
+            fork.entity.delete()

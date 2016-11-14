@@ -808,3 +808,85 @@ class TestSavepoints(TestCase):
         ds.savepoints.index = {}
         with pytest.raises(KeyError) as err:
             ds.load_savepoint('savepoint')
+
+
+class TestForks(TestCase):
+
+    ds_url = 'http://test.crunch.io/api/datasets/123/'
+
+    def test_fork(self):
+        sess = mock.MagicMock()
+        body = JSONObject({
+            'name': 'ds name',
+            'description': 'ds description'
+        })
+        ds = Dataset(session=sess, body=body)
+        ds.forks = mock.MagicMock()
+        ds.forks.index = {}
+        f = ds.fork()
+        ds.forks.create.assert_called_with(
+            {
+                'body': {
+                    'name': 'FORK #1 of ds name',
+                    'description': 'ds description',
+                    'is_published': False,
+                }
+            }
+        )
+        f.create_savepoint.assert_called_with('initial fork')
+
+    def test_delete_forks(self):
+        f1 = mock.MagicMock()
+        f2 = mock.MagicMock()
+        f3 = mock.MagicMock()
+        sess = mock.MagicMock()
+        ds = Dataset(session=sess)
+        ds.forks = mock.MagicMock()
+        ds.forks.index = {
+            'abc1': f1,
+            'abc2': f2,
+            'abc3': f3
+        }
+
+        ds.delete_forks()
+
+        f1.entity.delete.call_count == 1
+        f2.entity.delete.call_count == 1
+        f3.entity.delete.call_count == 1
+
+    def test_forks_dataframe(self):
+        f1 = dict(
+            name='name',
+            description='description',
+            is_published=True,
+            owner_name='Jane Doe',
+            current_editor_name='John Doe',
+            creation_time='2016-01-01T00:00Z',
+            modification_time='2016-01-01T00:00Z',
+            id='abc123',
+        )
+        sess = mock.MagicMock()
+        ds = Dataset(session=sess)
+        ds.forks = mock.MagicMock()
+        ds.forks.index = {
+            'abc1': f1
+        }
+
+        df = ds.forks_dataframe()
+        assert isinstance(df, DataFrame)
+        keys = [k for k in six.iterkeys(df)]
+        assert keys == [
+            'name', 'description', 'is_published', 'owner_name',
+            'current_editor_name', 'creation_time', 'modification_time', 'id'
+        ]
+
+    def test_forks_dataframe_empty(self):
+
+        sess = mock.MagicMock()
+        ds = Dataset(session=sess)
+        ds.forks = mock.MagicMock()
+        ds.forks.index = {}
+
+        df = ds.forks_dataframe()
+
+        assert df is None
