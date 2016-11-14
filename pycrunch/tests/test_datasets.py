@@ -4,7 +4,10 @@ from unittest import TestCase
 from unittest import mock
 
 import pytest
+import six
+from pandas import DataFrame
 from pycrunch.datasets import Dataset
+from pycrunch.elements import Document, JSONObject
 from pycrunch.shoji import Tuple, Entity
 from pycrunch.variables import cast
 
@@ -755,3 +758,53 @@ class TestCurrentEditor(TestCase):
         ds.patch.assert_called_with({
             'current_editor': self.user_url
         })
+
+
+class TestSavepoints(TestCase):
+
+    ds_url = 'http://test.crunch.io/api/datasets/123/'
+
+    def test_create_savepoint(self):
+        sess = mock.MagicMock()
+        ds = Dataset(session=sess)
+        ds.savepoints = mock.MagicMock()
+        ds.create_savepoint('savepoint description')
+        ds.savepoints.create.assert_called_with(
+            {
+                'body': {
+                    'description': 'savepoint description'
+                }
+            }
+        )
+
+    def test_create_savepoint_keyerror(self):
+        sess = mock.MagicMock()
+        ds = Dataset(session=sess)
+        ds.savepoints = mock.MagicMock()
+        ds.savepoints.index = {
+            1: {
+                'description': 'savepoint description'
+            }
+        }
+        with pytest.raises(KeyError) as err:
+            ds.create_savepoint('savepoint description')
+
+    def test_load_initial_savepoint(self):
+        sess = mock.MagicMock()
+        ds = Dataset(session=sess)
+        ds.savepoints = mock.MagicMock()
+        ds.savepoints.index = {
+            1: {
+                'description': 'savepoint description'
+            }
+        }
+        with pytest.raises(KeyError) as err:
+            ds.create_savepoint('savepoint description')
+
+    def test_load_empty_savepoint(self):
+        sess = mock.MagicMock()
+        ds = Dataset(session=sess)
+        ds.savepoints = mock.MagicMock()
+        ds.savepoints.index = {}
+        with pytest.raises(KeyError) as err:
+            ds.load_savepoint('savepoint')

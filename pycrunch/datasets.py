@@ -6,6 +6,9 @@ if six.PY2:  # pragma: no cover
     from urlparse import urlsplit
 else:
     from urllib.parse import urlsplit
+
+import pandas as pd
+
 from pycrunch.expressions import parse_expr
 from pycrunch.expressions import process_expr
 from pycrunch.shoji import Entity
@@ -314,3 +317,80 @@ class Dataset(Entity):
         user_url = user if _is_url(user) else _to_url(user)
 
         self.patch({'current_editor': user_url})
+
+    def create_savepoint(self, description):
+        """
+        Creates a savepoint on the dataset.
+
+        Parameters
+        ----------
+        description : str
+            The description that should be given to the new savepoint. This
+            function will not let you create a new savepoint with the same
+            description as any other savepoint.
+
+        Returns
+        -------
+        None
+        """
+        if len(self.savepoints.index) > 0:
+            if description in self.savepoint_attributes('description'):
+                raise KeyError(
+                    "A checkpoint with the description '{}' already"
+                    " exists.".format(description)
+                )
+
+        self.savepoints.create({'body': {'description': description}})
+
+    def load_savepoint(self, description=None):
+        """
+        Load a savepoint on the dataset.
+
+        Parameters
+        ----------
+        description : str, default=None
+            The description that identifies which savepoint to be loaded.
+            When loading a savepoint, all savepoints that were saved after
+            the loaded savepoint will be destroyed permanently.
+
+        Returns
+        -------
+        None
+        """
+
+        if description is None:
+            description = 'initial import'
+        elif description not in self.savepoint_attributes('description'):
+            raise KeyError(
+                "No checkpoint with the description '{}'"
+                " exists.".format(description)
+            )
+
+        revert = self.savepoints.by('description').get(description).revert
+        self.session.post(revert)
+
+    def savepoint_attributes(self, attrib):
+        """
+        Return list of attributes from the given dataset's savepoints.
+
+        Parameters
+        ----------
+        attrib : str
+            The attribute to be returned for each savepoint in the given
+            dataset. Available attributes are:
+                'creation_time'
+                'description'
+                'last_update'
+                'revert'
+                'user_name'
+                'version'
+        """
+
+        if len(self.savepoints.index) == 0:
+            return []
+        else:
+            attribs = [
+                cp[attrib] for url, cp in six.iteritems(self.savepoints.index)
+            ]
+
+            return attribs
