@@ -4,6 +4,82 @@ Dataset Manipulation
 This document describes and gives examples of how
 to manipulate the data on datasets.
 
+For the rest of this document suppose `Omnibus` is the name of a crunch 
+dataset, so start by loading it:
+
+```python
+my_dataset = site.datasets.by('name').get('Omnibus').entity
+```
+
+
+## Change current editor
+
+Main requirement to manipulate the dataset is to be the current editor. 
+Set yourself the current editor by calling:
+
+```python
+my_dataset.change_current_editor('your@email.com')
+```
+
+Also is possible to pass the user url:
+
+```python
+my_dataset.change_current_editor('https://app.crunch.io/api/users/<userid>')
+```
+
+## Dataset Forks
+
+While editing the dataset you may want to work on a fork. Use the following
+helpers to manage the dataset forks.
+
+### Fork the dataset
+
+Starting with the instance of a dataset, use the `.fork()` method to create 
+a fork.
+
+```python
+my_dataset_fork = my_dataset.fork()
+```
+
+The resulting object is also a `pycrunch.datasets.Dataset` instance and 
+you can use it as with any other dataset instance. 
+
+### Delete a fork
+
+The same way you can delete a dataset, the fork can be deleted calling 
+the `.delete()` method:
+
+```python
+my_dataset_fork.delete()
+```
+
+### Delete all forks
+
+It is also possible to delete all forks, just use the `.delete_forks()` 
+method from the dataset.
+
+```python
+my_dataset.delete_forks()
+```
+
+    Note that here we are using the `my_dataset` object, not the 
+    `my_dataset_fork`.`
+
+## Savepoints
+
+Savepoints works as snapshots of the current state of the dataset. You 
+can create savepoints by doing the following:
+
+```python
+my_dataset.create_savepoint('savepoint description')
+```
+
+Now if you want to revert any change and reset the dataset to the previous 
+savepoint do the following:
+
+```python
+my_dataset.load_savepoint('savepoint description')
+```
 
 ## Drop Rules
 
@@ -11,16 +87,11 @@ to manipulate the data on datasets.
 
 Drop rules are used to delete invalid cases -- respondents who spent too little 
 time answering the survey ("speeders"), cases with inconsistent data, etc. 
-In Crunch, these are supported using *exclusion filters*, which are specified using a logical expression.
+In Crunch, these are supported using *exclusion filters*, which are 
+specified using a logical expression.
 
-For example, suppose `Omnibus` is the name of a crunch dataset and `disposition` 
-is the alias of a variable, start by loading the dataset:
-
-```python
-my_dataset = site.datasets.by('name').get('Omnibus').entity
-```
-
-Now apply the exclusion filter:
+For example, assume that we have `disposition` as the alias of a variable 
+in the `Omnibus` dataset. Then apply the exclusion filter:
 
 ```python
 my_dataset.exclude("disposition != 0")
