@@ -874,7 +874,7 @@ class TestForks(TestCase):
 
         df = ds.forks_dataframe()
         assert isinstance(df, DataFrame)
-        keys = [k for k in six.iterkeys(df)]
+        keys = [k for k in df.keys()]
         assert keys == [
             'name', 'description', 'is_published', 'owner_name',
             'current_editor_name', 'creation_time', 'modification_time', 'id'
