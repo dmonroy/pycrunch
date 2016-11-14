@@ -118,7 +118,10 @@ class Catalog(elements.Document):
         An entity is returned.
         """
         _cls = Entity
-        if 'self' in self and self['self'].endswith('/api/datasets/'):
+        if 'self' in self and (
+                    self['self'].endswith('/api/datasets/') or
+                    self['self'].endswith('/forks/')
+                ):
             # A Dataset is being created.
             _cls = pycrunch.datasets.Dataset
 
